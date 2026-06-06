@@ -2,7 +2,8 @@ import http from "node:http";
 import express from "express";
 import cors from "cors";
 import { Server } from "socket.io";
-import { config } from "./config.js";
+import { config, isAllowedOrigin } from "./config.js";
+import type { CorsOptions } from "cors";
 import { Store } from "./store.js";
 import { Presence } from "./presence.js";
 import { GameEngine, GameError } from "./game.js";
@@ -31,8 +32,13 @@ import type {
 const store = await Store.create();
 const presence = new Presence();
 
+const corsOptions: CorsOptions = {
+  origin: (origin, cb) => cb(null, isAllowedOrigin(origin ?? undefined)),
+  credentials: true,
+};
+
 const app = express();
-app.use(cors({ origin: config.clientOrigin, credentials: true }));
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // ---- REST: auth ----
@@ -81,7 +87,7 @@ app.get("/api/me", (req, res) => {
 
 const server = http.createServer(app);
 const io = new Server<ClientToServerEvents, ServerToClientEvents, {}, SocketData>(server, {
-  cors: { origin: config.clientOrigin, credentials: true },
+  cors: corsOptions,
 });
 
 // broadcast/toast closures (engine is assigned just below)
@@ -274,5 +280,7 @@ function errMsg(e: unknown): string {
 }
 
 server.listen(config.port, () => {
-  console.log(`[whoisfake] server on http://localhost:${config.port} (store: ${store.backend})`);
+  console.log(`[whoisfake] server on :${config.port} (store: ${store.backend})`);
+  console.log(`[whoisfake] CORS origins: ${config.clientOrigins.join(", ")}` +
+    (config.allowVercelPreviews ? " (+ *.vercel.app)" : ""));
 });
