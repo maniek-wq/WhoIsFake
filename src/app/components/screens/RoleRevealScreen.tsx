@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { GameButton } from "../ui/GameButton";
 import { Eye, EyeOff, AlertTriangle, BookOpen, ChevronRight } from "lucide-react";
+import { useI18n } from "../../i18n/LanguageContext";
 
 interface RoleRevealScreenProps {
   isImpostor: boolean;
@@ -20,6 +21,8 @@ export function RoleRevealScreen({
   playerName,
   onReady,
 }: RoleRevealScreenProps) {
+  const { t } = useI18n();
+  const categoryLabel = category ? t(`category.${category}`) : "";
   const [revealed, setRevealed] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
 
@@ -76,9 +79,9 @@ export function RoleRevealScreen({
                     `}
                   >
                     {isImpostor ? (
-                      <><AlertTriangle className="w-4 h-4" /> Impostor</>
+                      <><AlertTriangle className="w-4 h-4" /> {t("role.impostor")}</>
                     ) : (
-                      <><BookOpen className="w-4 h-4" /> Player</>
+                      <><BookOpen className="w-4 h-4" /> {t("role.player")}</>
                     )}
                   </motion.div>
 
@@ -88,7 +91,7 @@ export function RoleRevealScreen({
                     transition={{ delay: 0.3 }}
                     className="text-slate-400 text-sm"
                   >
-                    Hey <span className="text-white font-semibold">{playerName}</span>,
+                    {t("role.hey")} <span className="text-white font-semibold">{playerName}</span>,
                   </motion.p>
                 </div>
 
@@ -103,27 +106,26 @@ export function RoleRevealScreen({
                     <>
                       <div className="text-7xl mb-4">👺</div>
                       <h2
-                        className="text-red-400 leading-tight mb-2"
+                        className="text-red-400 leading-tight mb-2 whitespace-pre-line"
                         style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "2.2rem", fontWeight: 700 }}
                       >
-                        You Are The<br />Impostor
+                        {t("role.youImpostor")}
                       </h2>
                       <p className="text-slate-500 text-sm max-w-xs mx-auto leading-relaxed">
-                        You don't know the secret word. Use the hint below and blend in.
-                        Don't get caught!
+                        {t("role.impostorDesc")}
                       </p>
                     </>
                   ) : (
                     <>
                       <div className="text-7xl mb-4">🕵️</div>
                       <h2
-                        className="text-blue-300 leading-tight mb-2"
+                        className="text-blue-300 leading-tight mb-2 whitespace-pre-line"
                         style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "2.2rem", fontWeight: 700 }}
                       >
-                        You Know<br />The Word
+                        {t("role.youKnow")}
                       </h2>
                       <p className="text-slate-500 text-sm max-w-xs mx-auto leading-relaxed">
-                        Give clues that only real players would know — but not so obvious that the Impostor can steal it.
+                        {t("role.playerDesc")}
                       </p>
                     </>
                   )}
@@ -148,25 +150,25 @@ export function RoleRevealScreen({
                       onClick={() => setRevealed(true)}
                     >
                       <Eye className={`w-6 h-6 mb-2 ${isImpostor ? "text-red-400" : "text-blue-400"}`} />
-                      <span className="text-sm text-slate-400">Tap to reveal your role info</span>
+                      <span className="text-sm text-slate-400">{t("role.tapReveal")}</span>
                     </div>
                   )}
 
                   {isImpostor ? (
                     <div>
-                      <p className="text-xs font-semibold text-red-400/70 uppercase tracking-wider mb-1">Category Hint</p>
-                      <p className="text-xl font-bold text-red-300">{category}</p>
+                      <p className="text-xs font-semibold text-red-400/70 uppercase tracking-wider mb-1">{t("role.categoryHint")}</p>
+                      <p className="text-xl font-bold text-red-300">{categoryLabel}</p>
                       <div className="mt-3 pt-3 border-t border-red-500/15">
-                        <p className="text-xs font-semibold text-red-400/70 uppercase tracking-wider mb-1">Your Hint</p>
+                        <p className="text-xs font-semibold text-red-400/70 uppercase tracking-wider mb-1">{t("role.yourHint")}</p>
                         <p className="text-sm text-red-200/80 leading-relaxed">{hint}</p>
                       </div>
                     </div>
                   ) : (
                     <div>
-                      <p className="text-xs font-semibold text-blue-400/70 uppercase tracking-wider mb-1">Category</p>
-                      <p className="text-sm text-slate-400">{category}</p>
+                      <p className="text-xs font-semibold text-blue-400/70 uppercase tracking-wider mb-1">{t("role.category")}</p>
+                      <p className="text-sm text-slate-400">{categoryLabel}</p>
                       <div className="mt-3 pt-3 border-t border-blue-500/15">
-                        <p className="text-xs font-semibold text-blue-400/70 uppercase tracking-wider mb-2">Secret Word</p>
+                        <p className="text-xs font-semibold text-blue-400/70 uppercase tracking-wider mb-2">{t("role.secretWord")}</p>
                         <p
                           className="text-blue-300 font-bold tracking-widest"
                           style={{ fontSize: "2rem", fontFamily: "Rajdhani, sans-serif" }}
@@ -196,7 +198,7 @@ export function RoleRevealScreen({
                   >
                     <p className="text-xs text-orange-300/80 flex items-start gap-2">
                       <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-orange-400" />
-                      Your goal: Blend in with clues, then guess the secret word or reach a 1v1 situation to win.
+                      {t("role.goal")}
                     </p>
                   </motion.div>
                 )}
@@ -208,7 +210,7 @@ export function RoleRevealScreen({
                   onClick={() => { setConfirmed(true); onReady(); }}
                   icon={<ChevronRight className="w-5 h-5" />}
                 >
-                  I Understand — Let's Play
+                  {t("role.understand")}
                 </GameButton>
               </div>
             </div>

@@ -6,6 +6,7 @@ import { PlayerAvatar } from "../ui/PlayerAvatar";
 import { CountdownTimer } from "../ui/CountdownTimer";
 import { Vote, AlertTriangle } from "lucide-react";
 import type { Player } from "../../types";
+import { useI18n } from "../../i18n/LanguageContext";
 
 interface VotingScreenProps {
   players: Player[];
@@ -15,6 +16,7 @@ interface VotingScreenProps {
 }
 
 export function VotingScreen({ players, currentPlayerId, onVote, onTimerEnd }: VotingScreenProps) {
+  const { t } = useI18n();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [hasVoted, setHasVoted] = useState(false);
 
@@ -51,9 +53,9 @@ export function VotingScreen({ players, currentPlayerId, onVote, onTimerEnd }: V
             className="text-white mb-2"
             style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "2rem", fontWeight: 700 }}
           >
-            Vote Time!
+            {t("voting.title")}
           </h2>
-          <p className="text-slate-400 text-sm">Who do you think is the Impostor?</p>
+          <p className="text-slate-400 text-sm">{t("voting.subtitle")}</p>
         </div>
 
         {/* Timer */}
@@ -61,8 +63,8 @@ export function VotingScreen({ players, currentPlayerId, onVote, onTimerEnd }: V
           <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-orange-500/10 border border-orange-500/20">
             <CountdownTimer seconds={30} onComplete={onTimerEnd} variant="orange" size="lg" />
             <div>
-              <p className="text-orange-300 font-semibold">Seconds left</p>
-              <p className="text-xs text-slate-500">Vote or skip</p>
+              <p className="text-orange-300 font-semibold">{t("voting.secondsLeft")}</p>
+              <p className="text-xs text-slate-500">{t("voting.voteOrSkip")}</p>
             </div>
           </div>
         </div>
@@ -109,7 +111,7 @@ export function VotingScreen({ players, currentPlayerId, onVote, onTimerEnd }: V
                             animate={{ opacity: 1 }}
                             className="text-xs text-orange-400 mt-1 font-medium"
                           >
-                            Selected
+                            {t("voting.selected")}
                           </motion.p>
                         )}
                       </GlassCard>
@@ -127,7 +129,7 @@ export function VotingScreen({ players, currentPlayerId, onVote, onTimerEnd }: V
               >
                 <p className="text-sm text-orange-300/80 flex items-center gap-2">
                   <AlertTriangle className="w-4 h-4 text-orange-400 flex-shrink-0" />
-                  You're voting to eliminate <strong>{players.find((p) => p.id === selectedId)?.name}</strong>. This cannot be undone.
+                  {t("voting.votingOut")} <strong>{players.find((p) => p.id === selectedId)?.name}</strong>. {t("voting.cannotUndo")}
                 </p>
               </motion.div>
             )}
@@ -141,14 +143,14 @@ export function VotingScreen({ players, currentPlayerId, onVote, onTimerEnd }: V
                 disabled={!selectedId}
                 icon={<Vote className="w-5 h-5" />}
               >
-                Confirm Vote
+                {t("voting.confirmVote")}
               </GameButton>
               <GameButton
                 variant="ghost"
                 size="lg"
                 onClick={() => { setHasVoted(true); onVote(""); }}
               >
-                Skip
+                {t("voting.skip")}
               </GameButton>
             </div>
           </>
@@ -161,8 +163,8 @@ export function VotingScreen({ players, currentPlayerId, onVote, onTimerEnd }: V
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-2xl">
               ✓
             </div>
-            <p className="text-white font-semibold mb-1">Vote submitted!</p>
-            <p className="text-slate-500 text-sm">Waiting for other players to vote…</p>
+            <p className="text-white font-semibold mb-1">{t("voting.voteSubmitted")}</p>
+            <p className="text-slate-500 text-sm">{t("voting.waitingVotes")}</p>
           </motion.div>
         )}
       </motion.div>

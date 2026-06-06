@@ -4,6 +4,7 @@ import { GlassCard } from "../ui/GlassCard";
 import { GameButton } from "../ui/GameButton";
 import { GameInput } from "../ui/GameInput";
 import { ArrowLeft, ChevronRight } from "lucide-react";
+import { useI18n } from "../../i18n/LanguageContext";
 
 interface JoinGameScreenProps {
   onBack: () => void;
@@ -11,14 +12,15 @@ interface JoinGameScreenProps {
 }
 
 export function JoinGameScreen({ onBack, onJoined }: JoinGameScreenProps) {
+  const { t } = useI18n();
   const [nickname, setNickname] = useState("");
   const [roomCode, setRoomCode] = useState("");
   const [errors, setErrors] = useState<{ nickname?: string; code?: string }>({});
 
   const handleJoin = () => {
     const newErrors: { nickname?: string; code?: string } = {};
-    if (!nickname.trim() || nickname.trim().length < 2) newErrors.nickname = "Enter a valid nickname (min 2 chars)";
-    if (!roomCode.trim() || roomCode.trim().length < 6) newErrors.code = "Enter a valid 6-character room code";
+    if (!nickname.trim() || nickname.trim().length < 2) newErrors.nickname = t("join.errNick");
+    if (!roomCode.trim() || roomCode.trim().length < 6) newErrors.code = t("join.errCode");
     if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return; }
     onJoined(roomCode.trim().toUpperCase(), nickname.trim());
   };
@@ -41,20 +43,20 @@ export function JoinGameScreen({ onBack, onJoined }: JoinGameScreenProps) {
           className="flex items-center gap-2 text-slate-500 hover:text-slate-300 mb-6 transition-colors text-sm"
         >
           <ArrowLeft className="w-4 h-4" />
-          Back
+          {t("common.back")}
         </button>
 
         <div className="mb-8">
           <h1 className="text-white mb-1" style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "2rem", fontWeight: 700 }}>
-            Join Game
+            {t("join.title")}
           </h1>
-          <p className="text-slate-500 text-sm">Enter a room code to jump in</p>
+          <p className="text-slate-500 text-sm">{t("join.subtitle")}</p>
         </div>
 
         <GlassCard glow="cyan" className="p-6 space-y-6">
           <GameInput
-            label="Room Code"
-            placeholder="e.g. AB12CD"
+            label={t("join.roomCode")}
+            placeholder={t("join.roomPlaceholder")}
             value={roomCode}
             onChange={(e) => {
               setRoomCode(e.target.value.toUpperCase().slice(0, 6));
@@ -66,8 +68,8 @@ export function JoinGameScreen({ onBack, onJoined }: JoinGameScreenProps) {
           />
 
           <GameInput
-            label="Your Nickname"
-            placeholder="e.g. NeonWolf"
+            label={t("join.nickname")}
+            placeholder={t("join.nicknamePlaceholder")}
             value={nickname}
             onChange={(e) => {
               setNickname(e.target.value);
@@ -85,12 +87,12 @@ export function JoinGameScreen({ onBack, onJoined }: JoinGameScreenProps) {
             onClick={handleJoin}
             icon={<ChevronRight className="w-5 h-5" />}
           >
-            Join Room
+            {t("join.joinRoom")}
           </GameButton>
         </GlassCard>
 
         <p className="text-center text-xs text-slate-600 mt-4">
-          Ask the host for their 6-letter room code
+          {t("join.ask")}
         </p>
       </motion.div>
     </div>

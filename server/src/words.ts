@@ -1,60 +1,61 @@
-// Word bank owned by the server (authoritative). Mirrors the categories used by
-// the original client gameData so the UI copy stays consistent.
+// Word bank owned by the server (authoritative).
+// Categories are stable keys (translated client-side). Words are Polish.
+// The impostor hint is a single evocative word.
 
 export const WORD_BANK: Record<string, { word: string; hint: string }[]> = {
-  Animals: [
-    { word: "DOLPHIN", hint: "Lives in the ocean, very intelligent, communicates with sounds" },
-    { word: "PENGUIN", hint: "A bird that cannot fly and lives in cold climates" },
-    { word: "CHAMELEON", hint: "A reptile known for changing its appearance" },
-    { word: "KANGAROO", hint: "A marsupial from Australia with a pouch" },
-    { word: "OCTOPUS", hint: "Sea creature with eight limbs, very intelligent" },
-    { word: "CHEETAH", hint: "The fastest land animal on Earth" },
-    { word: "FLAMINGO", hint: "A large pink wading bird that stands on one leg" },
+  animals: [
+    { word: "DELFIN", hint: "Ocean" },
+    { word: "PINGWIN", hint: "Lód" },
+    { word: "KAMELEON", hint: "Kolory" },
+    { word: "KANGUR", hint: "Australia" },
+    { word: "OŚMIORNICA", hint: "Macki" },
+    { word: "GEPARD", hint: "Szybkość" },
+    { word: "FLAMING", hint: "Róż" },
   ],
-  Food: [
-    { word: "SUSHI", hint: "A Japanese dish, often involves raw ingredients on rice" },
-    { word: "AVOCADO", hint: "A green fruit, creamy inside, used in guacamole" },
-    { word: "CROISSANT", hint: "A buttery, flaky pastry from France, crescent-shaped" },
-    { word: "RAMEN", hint: "A Japanese noodle soup, hot, often with broth" },
-    { word: "TRUFFLE", hint: "A luxury fungus found underground, very expensive" },
-    { word: "MANGO", hint: "A tropical fruit, sweet and orange inside" },
-    { word: "PRETZEL", hint: "A baked snack, twisted into a knot shape, salty" },
+  food: [
+    { word: "SUSHI", hint: "Japonia" },
+    { word: "AWOKADO", hint: "Guacamole" },
+    { word: "CROISSANT", hint: "Francja" },
+    { word: "RAMEN", hint: "Zupa" },
+    { word: "TRUFLA", hint: "Luksus" },
+    { word: "MANGO", hint: "Tropik" },
+    { word: "PRECEL", hint: "Sól" },
   ],
-  Objects: [
-    { word: "TELESCOPE", hint: "A device used to look at objects very far away" },
-    { word: "COMPASS", hint: "A tool used for navigation, points to the north" },
-    { word: "HOURGLASS", hint: "A timer device using sand to measure time" },
-    { word: "MICROSCOPE", hint: "Used to see very small things not visible to the eye" },
-    { word: "TYPEWRITER", hint: "An old machine used to write text on paper" },
-    { word: "KALEIDOSCOPE", hint: "A tube with mirrors that creates colorful patterns" },
-    { word: "THERMOMETER", hint: "A device that measures temperature" },
+  objects: [
+    { word: "TELESKOP", hint: "Gwiazdy" },
+    { word: "KOMPAS", hint: "Północ" },
+    { word: "KLEPSYDRA", hint: "Piasek" },
+    { word: "MIKROSKOP", hint: "Drobne" },
+    { word: "MASZYNA DO PISANIA", hint: "Litery" },
+    { word: "KALEJDOSKOP", hint: "Wzory" },
+    { word: "TERMOMETR", hint: "Temperatura" },
   ],
-  Places: [
-    { word: "COLOSSEUM", hint: "A famous ancient arena in Italy, used for combat" },
-    { word: "AMAZON", hint: "The world's largest rainforest, also a giant river" },
-    { word: "SAHARA", hint: "The world's largest hot desert, in Africa" },
-    { word: "ANTARCTICA", hint: "The coldest continent on Earth, no native human population" },
-    { word: "VERSAILLES", hint: "A famous French palace with magnificent gardens" },
-    { word: "SILICON VALLEY", hint: "A region in California known for tech companies" },
-    { word: "STONEHENGE", hint: "An ancient stone monument in England" },
+  places: [
+    { word: "KOLOSEUM", hint: "Rzym" },
+    { word: "AMAZONIA", hint: "Dżungla" },
+    { word: "SAHARA", hint: "Pustynia" },
+    { word: "ANTARKTYDA", hint: "Mróz" },
+    { word: "WERSAL", hint: "Pałac" },
+    { word: "DOLINA KRZEMOWA", hint: "Technologia" },
+    { word: "STONEHENGE", hint: "Kamienie" },
   ],
-  Professions: [
-    { word: "SOMMELIER", hint: "An expert in wine, works in restaurants" },
-    { word: "TAXIDERMIST", hint: "Someone who preserves and mounts dead animals" },
-    { word: "ACTUARY", hint: "A professional who calculates financial risks using math" },
-    { word: "LOCKSMITH", hint: "A person who works with locks and keys" },
-    { word: "CARTOGRAPHER", hint: "A person who makes and studies maps" },
-    { word: "INTERPRETER", hint: "Someone who translates spoken language in real time" },
-    { word: "ARCHAEOLOGIST", hint: "Studies human history by excavating ancient sites" },
+  professions: [
+    { word: "SOMELIER", hint: "Wino" },
+    { word: "TAKSYDERMISTA", hint: "Wypychanie" },
+    { word: "AKTUARIUSZ", hint: "Ryzyko" },
+    { word: "ŚLUSARZ", hint: "Klucze" },
+    { word: "KARTOGRAF", hint: "Mapy" },
+    { word: "TŁUMACZ", hint: "Języki" },
+    { word: "ARCHEOLOG", hint: "Wykopaliska" },
   ],
-  Plants: [
-    { word: "BAMBOO", hint: "The fastest-growing plant on Earth, used in construction" },
-    { word: "VENUS FLYTRAP", hint: "A plant that captures and eats insects" },
-    { word: "CACTUS", hint: "A plant that stores water and has sharp spines" },
-    { word: "ORCHID", hint: "An exotic flower prized for its beauty and diversity" },
-    { word: "MANGROVE", hint: "A tree that grows in coastal saltwater environments" },
-    { word: "LOTUS", hint: "A sacred aquatic flower that grows in muddy water" },
-    { word: "BAOBAB", hint: "A massive tree with a thick trunk, native to Africa" },
+  plants: [
+    { word: "BAMBUS", hint: "Wzrost" },
+    { word: "MUCHOŁÓWKA", hint: "Owady" },
+    { word: "KAKTUS", hint: "Kolce" },
+    { word: "ORCHIDEA", hint: "Kwiat" },
+    { word: "NAMORZYN", hint: "Korzenie" },
+    { word: "LOTOS", hint: "Woda" },
+    { word: "BAOBAB", hint: "Drzewo" },
   ],
 };
 

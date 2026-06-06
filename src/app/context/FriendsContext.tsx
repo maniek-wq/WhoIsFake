@@ -8,6 +8,7 @@ import {
 } from "react";
 import { useAuth } from "./AuthContext";
 import { useToast } from "./ToastContext";
+import { useI18n } from "../i18n/LanguageContext";
 import { emitAck } from "../lib/socket";
 import type { Ack, FriendsPayload } from "../lib/protocol";
 
@@ -37,6 +38,7 @@ const Ctx = createContext<FriendsCtx | null>(null);
 export function FriendsProvider({ children }: { children: ReactNode }) {
   const { socket, user } = useAuth();
   const { addToast } = useToast();
+  const { t, ts } = useI18n();
   const [payload, setPayload] = useState<FriendsPayload>(EMPTY);
   const [panelOpen, setPanelOpen] = useState(false);
   const [pendingInvite, setPendingInvite] = useState<PendingInvite | null>(null);
@@ -50,7 +52,7 @@ export function FriendsProvider({ children }: { children: ReactNode }) {
     const onUpdate = (p: FriendsPayload) => setPayload(p);
     const onInvite = (p: PendingInvite) => {
       setPendingInvite(p);
-      addToast("info", `${p.fromUsername} invited you to room ${p.code}`);
+      addToast("info", `${t("social.inviteFrom", { name: p.fromUsername })} ${p.code}`);
     };
     socket.on("friends:update", onUpdate);
     socket.on("friends:invite", onInvite);
@@ -68,7 +70,7 @@ export function FriendsProvider({ children }: { children: ReactNode }) {
       socket.off("friends:update", onUpdate);
       socket.off("friends:invite", onInvite);
     };
-  }, [socket, user, addToast]);
+  }, [socket, user, addToast, t]);
 
   const refresh = useCallback(() => {
     emitAck<Ack<FriendsPayload>>("friends:list")
@@ -81,43 +83,43 @@ export function FriendsProvider({ children }: { children: ReactNode }) {
       try {
         const res = await emitAck<Ack<{}>>("friends:request", { username });
         if (!res.ok) {
-          addToast("error", res.error);
+          addToast("error", ts(res.error));
           return false;
         }
-        addToast("success", `Friend request sent to ${username}`);
+        addToast("success", t("social.reqSent", { name: username }));
         return true;
       } catch {
-        addToast("error", "Could not send request");
+        addToast("error", t("social.reqError"));
         return false;
       }
     },
-    [addToast]
+    [addToast, t, ts]
   );
 
   const respond = useCallback(
     async (requestId: string, accept: boolean) => {
       const res = await emitAck<Ack<{}>>("friends:respond", { requestId, accept });
-      if (!res.ok) addToast("error", res.error);
-      else addToast(accept ? "success" : "info", accept ? "Friend added!" : "Request declined");
+      if (!res.ok) addToast("error", ts(res.error));
+      else addToast(accept ? "success" : "info", accept ? t("social.friendAdded") : t("social.reqDeclined"));
     },
-    [addToast]
+    [addToast, t, ts]
   );
 
   const removeFriend = useCallback(
     async (friendId: string) => {
       const res = await emitAck<Ack<{}>>("friends:remove", { friendId });
-      if (!res.ok) addToast("error", res.error);
+      if (!res.ok) addToast("error", ts(res.error));
     },
-    [addToast]
+    [addToast, ts]
   );
 
   const invite = useCallback(
     async (friendId: string) => {
       const res = await emitAck<Ack<{}>>("friends:invite", { friendId });
-      if (!res.ok) addToast("error", res.error);
-      else addToast("success", "Invite sent");
+      if (!res.ok) addToast("error", ts(res.error));
+      else addToast("success", t("social.inviteSent"));
     },
-    [addToast]
+    [addToast, t, ts]
   );
 
   return (

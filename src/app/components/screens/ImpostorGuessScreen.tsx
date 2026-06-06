@@ -4,6 +4,7 @@ import { GlassCard } from "../ui/GlassCard";
 import { GameButton } from "../ui/GameButton";
 import { GameInput } from "../ui/GameInput";
 import { Target, ArrowLeft, AlertTriangle } from "lucide-react";
+import { useI18n } from "../../i18n/LanguageContext";
 
 interface ImpostorGuessScreenProps {
   hint: string;
@@ -13,6 +14,8 @@ interface ImpostorGuessScreenProps {
 }
 
 export function ImpostorGuessScreen({ hint, category, onGuess, onCancel }: ImpostorGuessScreenProps) {
+  const { t } = useI18n();
+  const categoryLabel = category ? t(`category.${category}`) : "";
   const [guess, setGuess] = useState("");
 
   return (
@@ -32,7 +35,7 @@ export function ImpostorGuessScreen({ hint, category, onGuess, onCancel }: Impos
           className="flex items-center gap-2 text-slate-500 hover:text-slate-300 mb-6 transition-colors text-sm"
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to game
+          {t("guess.backToGame")}
         </button>
 
         <div className="text-center mb-8">
@@ -48,20 +51,20 @@ export function ImpostorGuessScreen({ hint, category, onGuess, onCancel }: Impos
             className="text-white mb-2"
             style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "2rem", fontWeight: 700 }}
           >
-            Guess The Word
+            {t("guess.title")}
           </h2>
-          <p className="text-slate-400 text-sm">This is your one shot — make it count!</p>
+          <p className="text-slate-400 text-sm">{t("guess.subtitle")}</p>
         </div>
 
         <GlassCard glow="orange" className="p-6 space-y-5">
           {/* Info */}
           <div className="grid grid-cols-2 gap-3">
             <div className="p-3 rounded-xl bg-[#1E293B]/80 border border-white/8 text-center">
-              <p className="text-xs text-slate-500 mb-1 uppercase tracking-wider">Category</p>
-              <p className="font-semibold text-slate-200">{category}</p>
+              <p className="text-xs text-slate-500 mb-1 uppercase tracking-wider">{t("guess.category")}</p>
+              <p className="font-semibold text-slate-200">{categoryLabel}</p>
             </div>
             <div className="p-3 rounded-xl bg-orange-500/8 border border-orange-500/20 text-center">
-              <p className="text-xs text-orange-400/70 mb-1 uppercase tracking-wider">Your Hint</p>
+              <p className="text-xs text-orange-400/70 mb-1 uppercase tracking-wider">{t("guess.yourHint")}</p>
               <p className="font-semibold text-orange-200">{hint}</p>
             </div>
           </div>
@@ -69,13 +72,13 @@ export function ImpostorGuessScreen({ hint, category, onGuess, onCancel }: Impos
           <div className="p-3 rounded-xl bg-red-500/8 border border-red-500/20">
             <p className="text-xs text-red-300/80 flex items-start gap-2">
               <AlertTriangle className="w-3.5 h-3.5 text-red-400 flex-shrink-0 mt-0.5" />
-              If you guess wrong, you lose immediately. Think carefully!
+              {t("guess.warning")}
             </p>
           </div>
 
           <GameInput
-            label="Your Guess"
-            placeholder="Type the secret word…"
+            label={t("guess.yourGuess")}
+            placeholder={t("guess.guessPlaceholder")}
             value={guess}
             onChange={(e) => setGuess(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && guess.trim() && onGuess(guess.trim())}
@@ -91,7 +94,7 @@ export function ImpostorGuessScreen({ hint, category, onGuess, onCancel }: Impos
             disabled={!guess.trim()}
             icon={<Target className="w-5 h-5" />}
           >
-            Submit Guess
+            {t("guess.submitGuess")}
           </GameButton>
         </GlassCard>
       </motion.div>

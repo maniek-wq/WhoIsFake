@@ -4,6 +4,7 @@ import { GlassCard } from "../ui/GlassCard";
 import { GameButton } from "../ui/GameButton";
 import { GameInput } from "../ui/GameInput";
 import { ArrowLeft, Copy, Users, Zap, Check } from "lucide-react";
+import { useI18n } from "../../i18n/LanguageContext";
 
 interface CreateGameScreenProps {
   onBack: () => void;
@@ -16,6 +17,7 @@ function generateRoomCode() {
 }
 
 export function CreateGameScreen({ onBack, onGameCreated }: CreateGameScreenProps) {
+  const { t } = useI18n();
   const [nickname, setNickname] = useState("");
   const [maxPlayers, setMaxPlayers] = useState(4);
   const [roomCode] = useState(generateRoomCode);
@@ -30,11 +32,11 @@ export function CreateGameScreen({ onBack, onGameCreated }: CreateGameScreenProp
 
   const handleCreate = () => {
     if (!nickname.trim()) {
-      setError("Enter your nickname");
+      setError(t("create.errNick"));
       return;
     }
     if (nickname.trim().length < 2) {
-      setError("Nickname must be at least 2 characters");
+      setError(t("create.errNickShort"));
       return;
     }
     onGameCreated(roomCode, nickname.trim(), maxPlayers);
@@ -58,21 +60,21 @@ export function CreateGameScreen({ onBack, onGameCreated }: CreateGameScreenProp
           className="flex items-center gap-2 text-slate-500 hover:text-slate-300 mb-6 transition-colors text-sm"
         >
           <ArrowLeft className="w-4 h-4" />
-          Back
+          {t("common.back")}
         </button>
 
         <div className="mb-8">
           <h1 className="text-white mb-1" style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "2rem", fontWeight: 700 }}>
-            Create Game
+            {t("create.title")}
           </h1>
-          <p className="text-slate-500 text-sm">Set up your room and invite friends</p>
+          <p className="text-slate-500 text-sm">{t("create.subtitle")}</p>
         </div>
 
         <GlassCard glow="blue" className="p-6 space-y-6">
           {/* Room code */}
           <div>
             <label className="text-sm font-medium text-slate-400 uppercase tracking-wider block mb-2">
-              Room Code
+              {t("create.roomCode")}
             </label>
             <div className="flex items-center gap-3">
               <div className="flex-1 px-4 py-3 rounded-xl bg-[#0F172A]/80 border border-blue-500/30 flex items-center justify-center">
@@ -91,13 +93,13 @@ export function CreateGameScreen({ onBack, onGameCreated }: CreateGameScreenProp
                 {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
               </motion.button>
             </div>
-            <p className="text-xs text-slate-600 mt-2">Share this code with your friends to join</p>
+            <p className="text-xs text-slate-600 mt-2">{t("create.share")}</p>
           </div>
 
           {/* Nickname */}
           <GameInput
-            label="Your Nickname"
-            placeholder="e.g. CryptoFox"
+            label={t("create.nickname")}
+            placeholder={t("create.nicknamePlaceholder")}
             value={nickname}
             onChange={(e) => { setNickname(e.target.value); setError(""); }}
             error={error}
@@ -108,7 +110,7 @@ export function CreateGameScreen({ onBack, onGameCreated }: CreateGameScreenProp
           {/* Player count */}
           <div>
             <label className="text-sm font-medium text-slate-400 uppercase tracking-wider block mb-3">
-              Max Players
+              {t("create.maxPlayers")}
             </label>
             <div className="grid grid-cols-3 gap-2">
               {[3, 4, 5].map((n) => (
@@ -139,12 +141,12 @@ export function CreateGameScreen({ onBack, onGameCreated }: CreateGameScreenProp
             onClick={handleCreate}
             icon={<Zap className="w-5 h-5" />}
           >
-            Create Room
+            {t("create.createRoom")}
           </GameButton>
         </GlassCard>
 
         <p className="text-center text-xs text-slate-600 mt-4">
-          You'll automatically join as host
+          {t("create.autoHost")}
         </p>
       </motion.div>
     </div>

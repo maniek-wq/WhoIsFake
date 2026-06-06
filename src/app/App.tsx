@@ -18,6 +18,7 @@ import { SidePanel } from "./components/social/SidePanel";
 
 import { useAuth } from "./context/AuthContext";
 import { useToast, toastTypeFromKind } from "./context/ToastContext";
+import { useI18n } from "./i18n/LanguageContext";
 import { emitAck } from "./lib/socket";
 import type { Ack, PlayerView, ServerToast } from "./lib/protocol";
 import type { Player } from "./types";
@@ -27,6 +28,7 @@ type PreRoute = "landing" | "create" | "join";
 export default function App() {
   const { socket, ensureIdentity, user } = useAuth();
   const { addToast } = useToast();
+  const { ts } = useI18n();
 
   const [route, setRoute] = useState<PreRoute>("landing");
   const [view, setView] = useState<PlayerView | null>(null);
@@ -39,14 +41,14 @@ export default function App() {
       setView(v);
       if (!v) setRoute("landing");
     };
-    const onToast = (t: ServerToast) => addToast(toastTypeFromKind(t.kind), t.message);
+    const onToast = (msg: ServerToast) => addToast(toastTypeFromKind(msg.kind), ts(msg.message));
     socket.on("state", onState);
     socket.on("toast", onToast);
     return () => {
       socket.off("state", onState);
       socket.off("toast", onToast);
     };
-  }, [socket, addToast]);
+  }, [socket, addToast, ts]);
 
   // leaving the clue phase closes the guess overlay
   useEffect(() => {
@@ -63,7 +65,7 @@ export default function App() {
       });
       if (!res.ok) addToast("error", res.error);
     } catch {
-      addToast("error", "Could not reach the server");
+      addToast("error", ts("Could not reach the server"));
     }
   };
 
@@ -73,7 +75,7 @@ export default function App() {
       const res = await emitAck<Ack<{ code: string }>>("room:join", { code: roomCode });
       if (!res.ok) addToast("error", res.error);
     } catch {
-      addToast("error", "Could not reach the server");
+      addToast("error", ts("Could not reach the server"));
     }
   };
 
@@ -251,6 +253,7 @@ export default function App() {
 }
 
 function TieScreen({ isHost, onContinue }: { isHost: boolean; onContinue: () => void }) {
+  const { t } = useI18n();
   return (
     <div className="min-h-screen mesh-bg flex items-center justify-center px-4">
       <motion.div
@@ -264,17 +267,17 @@ function TieScreen({ isHost, onContinue }: { isHost: boolean; onContinue: () => 
             className="text-white mb-2"
             style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "2rem", fontWeight: 700 }}
           >
-            It's a Tie!
+            {t("results.tie")}
           </h2>
           <p className="text-slate-400 text-sm mb-6">
-            The vote was split — no one was eliminated this round.
+            {t("results.tieDesc")}
           </p>
           {isHost ? (
             <GameButton variant="primary" size="lg" fullWidth onClick={onContinue}>
-              Continue
+              {t("common.continue")}
             </GameButton>
           ) : (
-            <p className="text-slate-500 text-sm">Waiting for the host to continue…</p>
+            <p className="text-slate-500 text-sm">{t("results.tieWait")}</p>
           )}
         </GlassCard>
       </motion.div>

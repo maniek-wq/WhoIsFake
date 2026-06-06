@@ -4,6 +4,7 @@ import { GameButton } from "../ui/GameButton";
 import { PlayerAvatar } from "../ui/PlayerAvatar";
 import { ChevronRight, Users, AlertTriangle } from "lucide-react";
 import type { Player } from "../../types";
+import { useI18n } from "../../i18n/LanguageContext";
 
 interface ResultsScreenProps {
   eliminatedPlayer: Player;
@@ -22,6 +23,7 @@ export function ResultsScreen({
   secretWord,
   onContinue,
 }: ResultsScreenProps) {
+  const { t } = useI18n();
   return (
     <div className={`min-h-screen flex items-center justify-center px-4 py-10 ${
       wasImpostor
@@ -69,18 +71,16 @@ export function ResultsScreen({
           </div>
 
           <p className="text-slate-400 text-sm mb-1">
-            {eliminatedPlayer.name} was voted out
+            {t("results.votedOut", { name: eliminatedPlayer.name })}
           </p>
           <p
             className={`font-bold mb-3 ${wasImpostor ? "text-emerald-400" : "text-red-400"}`}
             style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "1.6rem" }}
           >
-            {wasImpostor ? "👺 The Impostor!" : "🕵️ Innocent Player"}
+            {wasImpostor ? t("results.theImpostor") : t("results.innocent")}
           </p>
           <p className="text-slate-500 text-sm">
-            {wasImpostor
-              ? "Good catch! The players identified the Impostor correctly."
-              : "Wrong guess! The Impostor is still among you…"}
+            {wasImpostor ? t("results.goodCatch") : t("results.wrongGuess")}
           </p>
         </motion.div>
 
@@ -92,7 +92,7 @@ export function ResultsScreen({
             transition={{ delay: 0.4 }}
           >
             <GlassCard className="p-4 mb-6 border-white/10">
-              <p className="text-xs text-slate-500 uppercase tracking-wider mb-2">The secret word was</p>
+              <p className="text-xs text-slate-500 uppercase tracking-wider mb-2">{t("results.secretWas")}</p>
               <p
                 className="text-blue-300 font-bold tracking-widest"
                 style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "2.2rem" }}
@@ -113,9 +113,9 @@ export function ResultsScreen({
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <Users className="w-4 h-4 text-slate-500" />
-                <span className="text-sm text-slate-400">Remaining players</span>
+                <span className="text-sm text-slate-400">{t("results.remaining")}</span>
               </div>
-              <span className="text-sm font-bold text-slate-300">{remainingPlayers.length} left</span>
+              <span className="text-sm font-bold text-slate-300">{t("results.left", { n: remainingPlayers.length })}</span>
             </div>
             <div className="flex items-center gap-3 flex-wrap justify-center">
               {remainingPlayers.map((p, i) => (
@@ -135,7 +135,7 @@ export function ResultsScreen({
               >
                 <p className="text-xs text-red-300 flex items-center gap-2">
                   <AlertTriangle className="w-3.5 h-3.5 text-red-400" />
-                  Danger! Only 2 players left — if the game continues, the Impostor wins!
+                  {t("results.danger")}
                 </p>
               </motion.div>
             )}
@@ -154,7 +154,7 @@ export function ResultsScreen({
             onClick={onContinue}
             icon={<ChevronRight className="w-5 h-5" />}
           >
-            {wasImpostor ? "Continue Game" : "Continue Game"}
+            {t("results.continue")}
           </GameButton>
         </motion.div>
       </motion.div>

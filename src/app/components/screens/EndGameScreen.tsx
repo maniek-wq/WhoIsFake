@@ -6,6 +6,7 @@ import { PlayerAvatar } from "../ui/PlayerAvatar";
 import { RotateCcw, Home, Trophy } from "lucide-react";
 import canvasConfetti from "canvas-confetti";
 import type { Player } from "../../types";
+import { useI18n } from "../../i18n/LanguageContext";
 
 interface EndGameScreenProps {
   impostorWon: boolean;
@@ -28,6 +29,7 @@ export function EndGameScreen({
   onPlayAgain,
   onGoHome,
 }: EndGameScreenProps) {
+  const { t } = useI18n();
   const fired = useRef(false);
 
   useEffect(() => {
@@ -60,10 +62,10 @@ export function EndGameScreen({
     }
   }, [impostorWon]);
 
-  const winReasonText = {
-    guessed: `${impostorName} correctly guessed the secret word!`,
-    onevsone: `${impostorName} survived until a 1v1 situation!`,
-    eliminated: `The players voted out the Impostor!`,
+  const winReasonText: Record<typeof winReason, string> = {
+    guessed: t("end.reasonGuessed", { name: impostorName }),
+    onevsone: t("end.reasonOnevsone", { name: impostorName }),
+    eliminated: t("end.reasonEliminated"),
   };
 
   return (
@@ -104,7 +106,7 @@ export function EndGameScreen({
             }
           `}>
             <Trophy className="w-4 h-4" />
-            {impostorWon ? "Impostor Victory" : "Players Victory"}
+            {impostorWon ? t("end.impostorVictory") : t("end.playersVictory")}
           </div>
           <h1
             className="leading-tight mb-3"
@@ -115,7 +117,7 @@ export function EndGameScreen({
               color: impostorWon ? "#EF4444" : "#60A5FA",
             }}
           >
-            {impostorWon ? "The Fake Wins!" : "Impostor Caught!"}
+            {impostorWon ? t("end.fakeWins") : t("end.impostorCaught")}
           </h1>
           <p className="text-slate-400 max-w-xs mx-auto leading-relaxed text-sm">
             {winReasonText[winReason]}
@@ -129,7 +131,7 @@ export function EndGameScreen({
           transition={{ delay: 0.5 }}
         >
           <GlassCard className="p-5 mb-4 border-white/10">
-            <p className="text-xs text-slate-500 uppercase tracking-wider mb-2">The secret word was</p>
+            <p className="text-xs text-slate-500 uppercase tracking-wider mb-2">{t("end.secretWas")}</p>
             <p
               className="text-white font-bold tracking-widest"
               style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "2.5rem", letterSpacing: "0.15em" }}
@@ -146,7 +148,7 @@ export function EndGameScreen({
           transition={{ delay: 0.65 }}
         >
           <GlassCard className={`p-4 mb-6 border ${impostorWon ? "border-red-500/20 bg-red-500/5" : "border-white/10"}`}>
-            <p className="text-xs text-slate-500 mb-3">The Impostor was</p>
+            <p className="text-xs text-slate-500 mb-3">{t("end.impostorWas")}</p>
             <div className="flex items-center justify-center gap-3">
               <PlayerAvatar
                 name={impostorName}
@@ -168,7 +170,7 @@ export function EndGameScreen({
           transition={{ delay: 0.8 }}
         >
           <GlassCard className="p-4 mb-8 border-white/8">
-            <p className="text-xs text-slate-500 mb-3">All players</p>
+            <p className="text-xs text-slate-500 mb-3">{t("end.allPlayers")}</p>
             <div className="flex items-center justify-center gap-3 flex-wrap">
               {players.map((p, i) => (
                 <div key={p.id} className="flex flex-col items-center gap-1.5">
@@ -201,7 +203,7 @@ export function EndGameScreen({
             onClick={onPlayAgain}
             icon={<RotateCcw className="w-5 h-5" />}
           >
-            Play Again
+            {t("end.playAgain")}
           </GameButton>
           <GameButton
             variant="ghost"
@@ -209,7 +211,7 @@ export function EndGameScreen({
             onClick={onGoHome}
             icon={<Home className="w-5 h-5" />}
           >
-            Home
+            {t("end.home")}
           </GameButton>
         </motion.div>
       </div>

@@ -219,6 +219,7 @@ export class GameEngine {
     if (p.isEliminated) throw new GameError("Eliminated players can't submit clues");
     const clean = text.trim().slice(0, 40);
     if (!clean) throw new GameError("Clue can't be empty");
+    if (/\s/.test(clean)) throw new GameError("Only one word allowed");
     if (room.clues.some((c) => c.round === room.round && c.playerId === userId))
       throw new GameError("You already submitted this round");
 
