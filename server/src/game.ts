@@ -1,11 +1,12 @@
 import { customAlphabet } from "nanoid";
 import { pickRandomWord } from "./words.js";
 import type { Store } from "./store.js";
-import type { Clue, PlayerView, Room, RoomPlayer, User } from "./types.js";
+import type { Clue, PlayerView, Room, RoomMode, RoomPlayer, User } from "./types.js";
 
 const MIN_PLAYERS = 3;
 const VOTE_SECONDS = 30;
 const ROOM_TTL_MS = 1000 * 60 * 60 * 2; // abandoned-room sweep window
+const MAX_IMAGE_CHARS = 700_000; // ~500KB data-URL cap for drawing clues
 
 const roomCode = customAlphabet("ABCDEFGHJKLMNPQRSTUVWXYZ23456789", 6);
 
@@ -56,7 +57,7 @@ export class GameEngine {
 
   // ---- room lifecycle ----
 
-  createRoom(user: User, maxPlayers: number, desiredCode?: string): Room {
+  createRoom(user: User, maxPlayers: number, desiredCode?: string, mode: RoomMode = "classic"): Room {
     if (this.playerRoom.has(user.id)) this.leaveRoom(user.id);
     const max = Math.min(5, Math.max(3, maxPlayers));
     const wanted = (desiredCode ?? "").toUpperCase().trim();
@@ -67,6 +68,7 @@ export class GameEngine {
       code,
       hostId: user.id,
       maxPlayers: max,
+      mode: mode === "drawing" ? "drawing" : "classic",
       status: "lobby",
       players: [this.newPlayer(user, true)],
       round: 1,
@@ -212,23 +214,29 @@ export class GameEngine {
 
   // ---- clues ----
 
-  submitClue(userId: string, text: string): void {
+  submitClue(userId: string, payload: { text?: string; image?: string }): void {
     const room = this.requireRoom(userId);
     if (room.status !== "playing") throw new GameError("Not accepting clues right now");
     const p = this.player(room, userId);
     if (p.isEliminated) throw new GameError("Eliminated players can't submit clues");
-    const clean = text.trim().slice(0, 40);
-    if (!clean) throw new GameError("Clue can't be empty");
-    if (/\s/.test(clean)) throw new GameError("Only one word allowed");
     if (room.clues.some((c) => c.round === room.round && c.playerId === userId))
       throw new GameError("You already submitted this round");
 
-    room.clues.push({
-      id: `${room.round}-${userId}`,
-      playerId: userId,
-      clue: clean,
-      round: room.round,
-    });
+    const clue: Clue = { id: `${room.round}-${userId}`, playerId: userId, clue: "", round: room.round };
+
+    if (room.mode === "drawing") {
+      const image = payload.image ?? "";
+      if (!image.startsWith("data:image/")) throw new GameError("Draw something first");
+      if (image.length > MAX_IMAGE_CHARS) throw new GameError("Drawing is too large");
+      clue.image = image;
+    } else {
+      const clean = (payload.text ?? "").trim().slice(0, 40);
+      if (!clean) throw new GameError("Clue can't be empty");
+      if (/\s/.test(clean)) throw new GameError("Only one word allowed");
+      clue.clue = clean;
+    }
+
+    room.clues.push(clue);
     p.hasSubmittedThisRound = true;
     this.deps.broadcast(room);
   }
@@ -521,6 +529,7 @@ export class GameEngine {
     return {
       roomCode: room.code,
       status: room.status,
+      mode: room.mode,
       maxPlayers: room.maxPlayers,
       round: room.round,
       hostId: room.hostId,

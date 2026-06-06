@@ -6,10 +6,13 @@ import { GameInput } from "../ui/GameInput";
 import { PlayerAvatar } from "../ui/PlayerAvatar";
 import { Send, Vote, Target, MessageSquare, History, AlertCircle, Users } from "lucide-react";
 import type { Player, ClueEntry } from "../../types";
+import type { RoomMode } from "../../lib/protocol";
 import { useI18n } from "../../i18n/LanguageContext";
+import { DrawingCanvas } from "../ui/DrawingCanvas";
 
 interface GameScreenProps {
   round: number;
+  mode: RoomMode;
   players: Player[];
   currentPlayerId: string;
   isImpostor: boolean;
@@ -18,13 +21,14 @@ interface GameScreenProps {
   hint?: string;
   clueHistory: ClueEntry[];
   hasSubmittedThisRound: boolean;
-  onSubmitClue: (clue: string) => void;
+  onSubmitClue: (content: { text?: string; image?: string }) => void;
   onStartVote: () => void;
   onGuessWord: () => void;
 }
 
 export function GameScreen({
   round,
+  mode,
   players,
   currentPlayerId,
   isImpostor,
@@ -38,6 +42,7 @@ export function GameScreen({
   onGuessWord,
 }: GameScreenProps) {
   const { t } = useI18n();
+  const isDrawing = mode === "drawing";
   const categoryLabel = category ? t(`category.${category}`) : "";
   const [clue, setClue] = useState("");
   const [activeTab, setActiveTab] = useState<"clues" | "players">("clues");
@@ -49,7 +54,7 @@ export function GameScreen({
     const trimmed = clue.trim();
     // single word only
     if (!trimmed || /\s/.test(trimmed)) return;
-    onSubmitClue(trimmed);
+    onSubmitClue({ text: trimmed });
     setClue("");
   };
 
@@ -180,10 +185,10 @@ export function GameScreen({
 
             {currentRoundClues.length === 0 ? (
               <GlassCard className="p-8 text-center border-dashed border-white/8">
-                <p className="text-slate-600 text-sm">{t("game.noClues")}</p>
+                <p className="text-slate-600 text-sm">{isDrawing ? t("draw.empty") : t("game.noClues")}</p>
               </GlassCard>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+              <div className={`grid gap-2 ${isDrawing ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4"}`}>
                 <AnimatePresence>
                   {currentRoundClues.map((entry, idx) => {
                     const player = players.find((p) => p.id === entry.playerId);
@@ -205,9 +210,13 @@ export function GameScreen({
                             </div>
                           )}
                           <p className="text-xs text-slate-500 mb-1 truncate">{player?.name}</p>
-                          <p className="font-bold text-slate-100" style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "1.05rem" }}>
-                            {entry.clue}
-                          </p>
+                          {entry.image ? (
+                            <img src={entry.image} alt="" className="w-full rounded-lg border border-white/10 bg-[#0b1220]" />
+                          ) : (
+                            <p className="font-bold text-slate-100" style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "1.05rem" }}>
+                              {entry.clue}
+                            </p>
+                          )}
                         </GlassCard>
                       </motion.div>
                     );
@@ -239,7 +248,11 @@ export function GameScreen({
                           return (
                             <div key={entry.id} className="p-2 rounded-xl bg-[#111827]/50 border border-white/5 text-center">
                               <p className="text-xs text-slate-600 mb-0.5 truncate">{player?.name}</p>
-                              <p className="text-sm font-semibold text-slate-400">{entry.clue}</p>
+                              {entry.image ? (
+                                <img src={entry.image} alt="" className="w-full rounded border border-white/10" />
+                              ) : (
+                                <p className="text-sm font-semibold text-slate-400">{entry.clue}</p>
+                              )}
                             </div>
                           );
                         })}
@@ -257,6 +270,20 @@ export function GameScreen({
                 <div className="text-center py-2">
                   <p className="text-emerald-400 font-semibold mb-1">{t("game.clueSubmitted")}</p>
                   <p className="text-sm text-slate-500">{t("game.waitingOthers")}</p>
+                </div>
+              ) : isDrawing ? (
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <Send className="w-4 h-4 text-blue-400" />
+                    <p className="text-sm font-semibold text-slate-300">{t("draw.yourDrawing", { n: round })}</p>
+                  </div>
+                  {isImpostor && (
+                    <div className="flex items-start gap-2 p-2.5 mb-3 rounded-lg bg-orange-500/8 border border-orange-500/20">
+                      <AlertCircle className="w-3.5 h-3.5 text-orange-400 flex-shrink-0 mt-0.5" />
+                      <p className="text-xs text-orange-300/80">{t("draw.impostorReminder", { hint: hint ?? "" })}</p>
+                    </div>
+                  )}
+                  <DrawingCanvas onSubmit={(image) => onSubmitClue({ image })} />
                 </div>
               ) : (
                 <div>

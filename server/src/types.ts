@@ -12,6 +12,8 @@ export type RoomStatus =
 
 export type WinReason = "guessed" | "onevsone" | "eliminated";
 
+export type RoomMode = "classic" | "drawing";
+
 // ---- Persistent domain (users / friends) ----
 
 export interface User {
@@ -66,6 +68,8 @@ export interface Clue {
   id: string;
   playerId: string;
   clue: string;
+  /** drawing-mode clue: a data-URL image */
+  image?: string;
   round: number;
 }
 
@@ -91,6 +95,7 @@ export interface Room {
   code: string;
   hostId: string;
   maxPlayers: number;
+  mode: RoomMode;
   status: RoomStatus;
   players: RoomPlayer[];
   round: number;
@@ -117,6 +122,7 @@ export interface Room {
 export interface PlayerView {
   roomCode: string;
   status: RoomStatus;
+  mode: RoomMode;
   maxPlayers: number;
   round: number;
   hostId: string;
@@ -176,7 +182,7 @@ export type Ack<T> = { ok: true; data: T } | { ok: false; error: string };
 
 export interface ClientToServerEvents {
   "room:create": (
-    p: { maxPlayers: number; code?: string },
+    p: { maxPlayers: number; code?: string; mode?: RoomMode },
     cb: (res: Ack<{ code: string }>) => void
   ) => void;
   "room:join": (p: { code: string }, cb: (res: Ack<{ code: string }>) => void) => void;
@@ -184,7 +190,7 @@ export interface ClientToServerEvents {
   "player:ready": (p: { ready: boolean }) => void;
   "game:start": () => void;
   "reveal:ack": () => void;
-  "clue:submit": (p: { text: string }) => void;
+  "clue:submit": (p: { text?: string; image?: string }) => void;
   "vote:start": () => void;
   "vote:cast": (p: { targetId: string }) => void;
   "impostor:guess": (p: { guess: string }, cb: (res: Ack<{ correct: boolean }>) => void) => void;

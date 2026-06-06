@@ -3,6 +3,7 @@
 
 export type RoomStatus = "lobby" | "reveal" | "playing" | "voting" | "results" | "ended";
 export type WinReason = "guessed" | "onevsone" | "eliminated";
+export type RoomMode = "classic" | "drawing";
 
 export interface PublicUser {
   id: string;
@@ -40,12 +41,14 @@ export interface Clue {
   id: string;
   playerId: string;
   clue: string;
+  image?: string;
   round: number;
 }
 
 export interface PlayerView {
   roomCode: string;
   status: RoomStatus;
+  mode: RoomMode;
   maxPlayers: number;
   round: number;
   hostId: string;

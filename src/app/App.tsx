@@ -56,14 +56,20 @@ export default function App() {
   }, [view?.status]);
 
   // ── pre-room handlers ──────────────────────────────────────────────────────
-  const handleGameCreated = async (roomCode: string, nickname: string, maxPlayers: number) => {
+  const handleGameCreated = async (
+    roomCode: string,
+    nickname: string,
+    maxPlayers: number,
+    mode: PlayerView["mode"]
+  ) => {
     try {
       await ensureIdentity(nickname);
       const res = await emitAck<Ack<{ code: string }>>("room:create", {
         maxPlayers,
         code: roomCode,
+        mode,
       });
-      if (!res.ok) addToast("error", res.error);
+      if (!res.ok) addToast("error", ts(res.error));
     } catch {
       addToast("error", ts("Could not reach the server"));
     }
@@ -73,7 +79,7 @@ export default function App() {
     try {
       await ensureIdentity(nickname);
       const res = await emitAck<Ack<{ code: string }>>("room:join", { code: roomCode });
-      if (!res.ok) addToast("error", res.error);
+      if (!res.ok) addToast("error", ts(res.error));
     } catch {
       addToast("error", ts("Could not reach the server"));
     }
@@ -171,6 +177,7 @@ export default function App() {
           <GameScreen
             key={`game-${view.round}`}
             round={view.round}
+            mode={view.mode}
             players={players}
             currentPlayerId={view.you.id}
             isImpostor={view.you.isImpostor}
@@ -179,7 +186,7 @@ export default function App() {
             hint={view.hint ?? ""}
             clueHistory={view.clueHistory}
             hasSubmittedThisRound={view.you.hasSubmittedThisRound}
-            onSubmitClue={(clue) => emit("clue:submit", { text: clue })}
+            onSubmitClue={(content) => emit("clue:submit", content)}
             onStartVote={() => emit("vote:start")}
             onGuessWord={() => setGuessing(true)}
           />

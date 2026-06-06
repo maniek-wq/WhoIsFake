@@ -157,10 +157,10 @@ io.on("connection", (socket) => {
   };
 
   // ---- game events ----
-  socket.on("room:create", ({ maxPlayers, code }, cb) => {
+  socket.on("room:create", ({ maxPlayers, code, mode }, cb) => {
     try {
       const user = store.getUserById(userId)!;
-      const room = engine.createRoom(user, maxPlayers, code);
+      const room = engine.createRoom(user, maxPlayers, code, mode);
       presence.setRoom(userId, room.code);
       refreshFriendsOf(userId);
       cb?.({ ok: true, data: { code: room.code } });
@@ -193,7 +193,7 @@ io.on("connection", (socket) => {
   socket.on("player:ready", ({ ready }) => guard(() => engine.setReady(userId, ready)));
   socket.on("game:start", () => guard(() => engine.startGame(userId)));
   socket.on("reveal:ack", () => guard(() => engine.ackReveal(userId)));
-  socket.on("clue:submit", ({ text }) => guard(() => engine.submitClue(userId, text)));
+  socket.on("clue:submit", (payload) => guard(() => engine.submitClue(userId, payload)));
   socket.on("vote:start", () => guard(() => engine.startVote(userId)));
   socket.on("vote:cast", ({ targetId }) => guard(() => engine.castVote(userId, targetId)));
   socket.on("game:continue", () => guard(() => engine.continueAfterResults(userId)));

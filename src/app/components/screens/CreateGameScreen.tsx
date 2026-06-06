@@ -3,12 +3,13 @@ import { motion } from "motion/react";
 import { GlassCard } from "../ui/GlassCard";
 import { GameButton } from "../ui/GameButton";
 import { GameInput } from "../ui/GameInput";
-import { ArrowLeft, Copy, Users, Zap, Check } from "lucide-react";
+import { ArrowLeft, Copy, Users, Zap, Check, Type, Palette } from "lucide-react";
 import { useI18n } from "../../i18n/LanguageContext";
+import type { RoomMode } from "../../lib/protocol";
 
 interface CreateGameScreenProps {
   onBack: () => void;
-  onGameCreated: (roomCode: string, playerName: string, maxPlayers: number) => void;
+  onGameCreated: (roomCode: string, playerName: string, maxPlayers: number, mode: RoomMode) => void;
 }
 
 function generateRoomCode() {
@@ -20,6 +21,7 @@ export function CreateGameScreen({ onBack, onGameCreated }: CreateGameScreenProp
   const { t } = useI18n();
   const [nickname, setNickname] = useState("");
   const [maxPlayers, setMaxPlayers] = useState(4);
+  const [mode, setMode] = useState<RoomMode>("classic");
   const [roomCode] = useState(generateRoomCode);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
@@ -39,7 +41,7 @@ export function CreateGameScreen({ onBack, onGameCreated }: CreateGameScreenProp
       setError(t("create.errNickShort"));
       return;
     }
-    onGameCreated(roomCode, nickname.trim(), maxPlayers);
+    onGameCreated(roomCode, nickname.trim(), maxPlayers, mode);
   };
 
   return (
@@ -106,6 +108,36 @@ export function CreateGameScreen({ onBack, onGameCreated }: CreateGameScreenProp
             maxLength={16}
             onKeyDown={(e) => e.key === "Enter" && handleCreate()}
           />
+
+          {/* Game mode */}
+          <div>
+            <label className="text-sm font-medium text-slate-400 uppercase tracking-wider block mb-3">
+              {t("create.mode")}
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {([
+                { id: "classic" as RoomMode, icon: <Type className="w-5 h-5" />, label: t("create.modeClassic"), desc: t("create.modeClassicDesc") },
+                { id: "drawing" as RoomMode, icon: <Palette className="w-5 h-5" />, label: t("create.modeDrawing"), desc: t("create.modeDrawingDesc") },
+              ]).map((m) => (
+                <motion.button
+                  key={m.id}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => setMode(m.id)}
+                  className={`p-3 rounded-xl border text-left transition-all ${
+                    mode === m.id
+                      ? "bg-blue-600/15 border-blue-500/50 shadow-[0_0_16px_rgba(37,99,235,0.25)]"
+                      : "bg-[#1E293B] border-white/10 hover:border-white/20"
+                  }`}
+                >
+                  <div className={`flex items-center gap-2 mb-1 ${mode === m.id ? "text-blue-300" : "text-slate-300"}`}>
+                    {m.icon}
+                    <span className="font-semibold">{m.label}</span>
+                  </div>
+                  <p className="text-xs text-slate-500 leading-snug">{m.desc}</p>
+                </motion.button>
+              ))}
+            </div>
+          </div>
 
           {/* Player count */}
           <div>

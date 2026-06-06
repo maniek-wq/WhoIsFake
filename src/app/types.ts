@@ -12,6 +12,7 @@ export interface ClueEntry {
   id: string;
   playerId: string;
   clue: string;
+  image?: string;
   round: number;
 }
 
