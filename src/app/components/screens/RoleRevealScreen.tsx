@@ -1,0 +1,238 @@
+import { useState } from "react";
+import { motion, AnimatePresence } from "motion/react";
+import { GameButton } from "../ui/GameButton";
+import { Eye, EyeOff, AlertTriangle, BookOpen, ChevronRight } from "lucide-react";
+
+interface RoleRevealScreenProps {
+  isImpostor: boolean;
+  secretWord?: string;
+  category?: string;
+  hint?: string;
+  playerName: string;
+  onReady: () => void;
+}
+
+export function RoleRevealScreen({
+  isImpostor,
+  secretWord,
+  category,
+  hint,
+  playerName,
+  onReady,
+}: RoleRevealScreenProps) {
+  const [revealed, setRevealed] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
+
+  return (
+    <div className={`min-h-screen flex items-center justify-center px-4 ${
+      isImpostor
+        ? "bg-gradient-to-br from-[#1a0505] via-[#0F172A] to-[#0F172A]"
+        : "bg-gradient-to-br from-[#030d1f] via-[#0F172A] to-[#0F172A]"
+    }`}>
+      {/* Background effect */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full blur-[150px] ${
+          isImpostor ? "bg-red-600/8" : "bg-blue-600/8"
+        }`} />
+      </div>
+
+      <AnimatePresence mode="wait">
+        {!confirmed ? (
+          <motion.div
+            key="reveal"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.1 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            className="relative z-10 w-full max-w-md"
+          >
+            {/* Card */}
+            <div className={`
+              relative overflow-hidden rounded-3xl border p-8
+              ${isImpostor
+                ? "bg-gradient-to-b from-[#1a0808]/90 to-[#111827]/90 border-red-500/30 shadow-[0_0_80px_rgba(239,68,68,0.15)]"
+                : "bg-gradient-to-b from-[#050d1f]/90 to-[#111827]/90 border-blue-500/30 shadow-[0_0_80px_rgba(37,99,235,0.15)]"
+              }
+              backdrop-blur-xl
+            `}>
+              {/* Decorative corner */}
+              <div className={`absolute top-0 right-0 w-32 h-32 rounded-full blur-[60px] ${
+                isImpostor ? "bg-red-500/10" : "bg-blue-500/10"
+              }`} />
+
+              <div className="relative">
+                {/* Role label */}
+                <div className="text-center mb-6">
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+                    className={`
+                      inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold uppercase tracking-widest mb-4
+                      ${isImpostor
+                        ? "bg-red-500/15 border border-red-500/30 text-red-400"
+                        : "bg-blue-500/15 border border-blue-500/30 text-blue-300"
+                      }
+                    `}
+                  >
+                    {isImpostor ? (
+                      <><AlertTriangle className="w-4 h-4" /> Impostor</>
+                    ) : (
+                      <><BookOpen className="w-4 h-4" /> Player</>
+                    )}
+                  </motion.div>
+
+                  <motion.p
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                    className="text-slate-400 text-sm"
+                  >
+                    Hey <span className="text-white font-semibold">{playerName}</span>,
+                  </motion.p>
+                </div>
+
+                {/* Role heading */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                  className="text-center mb-8"
+                >
+                  {isImpostor ? (
+                    <>
+                      <div className="text-7xl mb-4">👺</div>
+                      <h2
+                        className="text-red-400 leading-tight mb-2"
+                        style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "2.2rem", fontWeight: 700 }}
+                      >
+                        You Are The<br />Impostor
+                      </h2>
+                      <p className="text-slate-500 text-sm max-w-xs mx-auto leading-relaxed">
+                        You don't know the secret word. Use the hint below and blend in.
+                        Don't get caught!
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-7xl mb-4">🕵️</div>
+                      <h2
+                        className="text-blue-300 leading-tight mb-2"
+                        style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "2.2rem", fontWeight: 700 }}
+                      >
+                        You Know<br />The Word
+                      </h2>
+                      <p className="text-slate-500 text-sm max-w-xs mx-auto leading-relaxed">
+                        Give clues that only real players would know — but not so obvious that the Impostor can steal it.
+                      </p>
+                    </>
+                  )}
+                </motion.div>
+
+                {/* Secret Info Card */}
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.5 }}
+                  className={`
+                    relative rounded-2xl border p-5 mb-6 overflow-hidden
+                    ${isImpostor
+                      ? "bg-red-500/8 border-red-500/25"
+                      : "bg-blue-500/8 border-blue-500/25"
+                    }
+                  `}
+                >
+                  {!revealed && (
+                    <div
+                      className="absolute inset-0 backdrop-blur-sm flex flex-col items-center justify-center cursor-pointer z-10 rounded-2xl bg-[#111827]/60"
+                      onClick={() => setRevealed(true)}
+                    >
+                      <Eye className={`w-6 h-6 mb-2 ${isImpostor ? "text-red-400" : "text-blue-400"}`} />
+                      <span className="text-sm text-slate-400">Tap to reveal your role info</span>
+                    </div>
+                  )}
+
+                  {isImpostor ? (
+                    <div>
+                      <p className="text-xs font-semibold text-red-400/70 uppercase tracking-wider mb-1">Category Hint</p>
+                      <p className="text-xl font-bold text-red-300">{category}</p>
+                      <div className="mt-3 pt-3 border-t border-red-500/15">
+                        <p className="text-xs font-semibold text-red-400/70 uppercase tracking-wider mb-1">Your Hint</p>
+                        <p className="text-sm text-red-200/80 leading-relaxed">{hint}</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <p className="text-xs font-semibold text-blue-400/70 uppercase tracking-wider mb-1">Category</p>
+                      <p className="text-sm text-slate-400">{category}</p>
+                      <div className="mt-3 pt-3 border-t border-blue-500/15">
+                        <p className="text-xs font-semibold text-blue-400/70 uppercase tracking-wider mb-2">Secret Word</p>
+                        <p
+                          className="text-blue-300 font-bold tracking-widest"
+                          style={{ fontSize: "2rem", fontFamily: "Rajdhani, sans-serif" }}
+                        >
+                          {secretWord}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {revealed && (
+                    <button
+                      onClick={() => setRevealed(false)}
+                      className="absolute top-2 right-2 text-slate-600 hover:text-slate-400 transition-colors"
+                    >
+                      <EyeOff className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </motion.div>
+
+                {isImpostor && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.6 }}
+                    className="bg-orange-500/8 border border-orange-500/20 rounded-xl p-3 mb-5"
+                  >
+                    <p className="text-xs text-orange-300/80 flex items-start gap-2">
+                      <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-orange-400" />
+                      Your goal: Blend in with clues, then guess the secret word or reach a 1v1 situation to win.
+                    </p>
+                  </motion.div>
+                )}
+
+                <GameButton
+                  variant={isImpostor ? "danger" : "primary"}
+                  size="lg"
+                  fullWidth
+                  onClick={() => { setConfirmed(true); onReady(); }}
+                  icon={<ChevronRight className="w-5 h-5" />}
+                >
+                  I Understand — Let's Play
+                </GameButton>
+              </div>
+            </div>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="waiting"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="relative z-10 text-center"
+          >
+            <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center">
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+              >
+                <div className="w-6 h-6 border-2 border-emerald-400/40 border-t-emerald-400 rounded-full" />
+              </motion.div>
+            </div>
+            <p className="text-white font-semibold mb-1">Ready!</p>
+            <p className="text-slate-500 text-sm">Waiting for other players to confirm their roles…</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
