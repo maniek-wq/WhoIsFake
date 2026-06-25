@@ -172,6 +172,7 @@ export default function App() {
             category={view.category ?? ""}
             hint={view.hint ?? ""}
             playerName={youName}
+            impostorCount={view.impostorCount}
             onReady={() => emit("reveal:ack")}
           />
         )}
@@ -191,6 +192,7 @@ export default function App() {
             hasSubmittedThisRound={view.you.hasSubmittedThisRound}
             currentTurnId={view.currentTurnId}
             turnOrder={view.turnOrder}
+            drawDeadline={view.drawDeadline}
             onSubmitClue={(content) => emit("clue:submit", content)}
             onStartVote={() => emit("vote:start")}
             onGuessWord={() => setGuessing(true)}
@@ -251,8 +253,8 @@ export default function App() {
           <EndGameScreen
             key="end-game"
             impostorWon={view.end.impostorWon}
-            impostorName={view.end.impostorName}
-            impostorIndex={players.findIndex((p) => p.id === view.end!.impostorId)}
+            impostorIds={view.end.impostorIds}
+            guesserName={view.end.guesserName}
             secretWord={view.secretWord ?? ""}
             players={players}
             winReason={view.end.winReason}

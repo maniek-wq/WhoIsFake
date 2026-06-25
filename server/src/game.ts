@@ -5,6 +5,8 @@ import type { Clue, PlayerView, Room, RoomMode, RoomPlayer, User } from "./types
 
 const MIN_PLAYERS = 3;
 const VOTE_SECONDS = 30;
+const DRAW_SECONDS = 60; // drawing-mode round timer (everyone draws at once)
+const DRAW_GRACE_MS = 2000; // grace so clients' real drawings beat the server cutoff
 const ROOM_TTL_MS = 1000 * 60 * 60 * 2; // abandoned-room sweep window
 const MAX_IMAGE_CHARS = 700_000; // ~500KB data-URL cap for drawing clues
 
@@ -27,6 +29,7 @@ export class GameEngine {
   /** userId -> roomCode */
   private playerRoom = new Map<string, string>();
   private voteTimers = new Map<string, NodeJS.Timeout>();
+  private drawTimers = new Map<string, NodeJS.Timeout>();
 
   constructor(private store: Store, private deps: EngineDeps) {
     setInterval(() => this.sweep(), 1000 * 60 * 10).unref?.();
@@ -56,6 +59,56 @@ export class GameEngine {
   }
 
   /**
+   * Pick who is impostor this game. Normally exactly one; in "szpont" mode the
+   * game randomly picks a high count (3, 4, or everyone — bounded by headcount).
+   */
+  private chooseImpostors(room: Room): string[] {
+    const ids = room.players.map((p) => p.id);
+    const n = ids.length;
+    let count = 1;
+    if (room.mode === "szpont") {
+      const candidates = [...new Set([3, 4, n].filter((c) => c >= 2 && c <= n))];
+      count = candidates.length
+        ? candidates[Math.floor(Math.random() * candidates.length)]
+        : n;
+    }
+    for (let i = ids.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [ids[i], ids[j]] = [ids[j], ids[i]];
+    }
+    return ids.slice(0, count);
+  }
+
+  /**
+   * End the game if a win condition is met; returns true if it did.
+   * Generalizes the classic rule to any number of impostors:
+   *  - crew win when every impostor is eliminated;
+   *  - impostors win on parity (impostors ≥ crew) or a correct word guess.
+   * An all-impostor game has no crew, so it's a pure guess race (only a correct
+   * guess — or the last player standing — ends it).
+   */
+  private resolveWinIfOver(room: Room): boolean {
+    const alive = this.alivePlayers(room);
+    if (alive.length <= 1) {
+      this.endGame(room, alive[0]?.isImpostor ?? true, "onevsone");
+      return true;
+    }
+    const allImpostor = room.players.length > 0 && room.players.every((p) => p.isImpostor);
+    if (allImpostor) return false;
+    const impsAlive = alive.filter((p) => p.isImpostor).length;
+    const crewAlive = alive.length - impsAlive;
+    if (impsAlive === 0) {
+      this.endGame(room, false, "eliminated");
+      return true;
+    }
+    if (impsAlive >= crewAlive) {
+      this.endGame(room, true, "onevsone");
+      return true;
+    }
+    return false;
+  }
+
+  /**
    * Whose turn it is to give a clue this round: the first player in the
    * round's turn order who is still alive and hasn't submitted yet.
    * Returns null when every alive player has given their clue.
@@ -82,6 +135,7 @@ export class GameEngine {
    * (so the order never reveals who the impostor is) and clear submissions.
    */
   private beginRound(room: Room): void {
+    this.clearDrawTimer(room.code);
     const ids = this.alivePlayers(room).map((p) => p.id);
     for (let i = ids.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -89,6 +143,36 @@ export class GameEngine {
     }
     room.turnOrder = ids;
     for (const p of room.players) p.hasSubmittedThisRound = false;
+    if (room.mode === "drawing") {
+      // Everyone draws at once against a shared 1-minute clock.
+      room.drawDeadline = Date.now() + DRAW_SECONDS * 1000;
+      const timer = setTimeout(
+        () => this.endDrawPhase(room.code),
+        DRAW_SECONDS * 1000 + DRAW_GRACE_MS
+      );
+      timer.unref?.();
+      this.drawTimers.set(room.code, timer);
+    } else {
+      room.drawDeadline = null;
+    }
+  }
+
+  /** Drawing clock expired: blank-submit anyone who didn't draw, then vote. */
+  private endDrawPhase(code: string): void {
+    const room = this.rooms.get(code);
+    if (!room || room.status !== "playing" || room.mode !== "drawing") return;
+    this.clearDrawTimer(code);
+    room.drawDeadline = null;
+    for (const p of this.alivePlayers(room)) {
+      const submitted = room.clues.some(
+        (c) => c.round === room.round && c.playerId === p.id
+      );
+      if (!submitted) {
+        room.clues.push({ id: `${room.round}-${p.id}`, playerId: p.id, clue: "", round: room.round });
+        p.hasSubmittedThisRound = true;
+      }
+    }
+    this.beginVote(room, room.hostId);
   }
 
   // ---- room lifecycle ----
@@ -104,20 +188,22 @@ export class GameEngine {
       code,
       hostId: user.id,
       maxPlayers: max,
-      mode: mode === "drawing" ? "drawing" : "classic",
+      mode: this.normalizeMode(mode),
       status: "lobby",
       players: [this.newPlayer(user, true)],
       round: 1,
       category: null,
       secretWord: null,
       hint: null,
-      impostorId: null,
+      impostorIds: [],
+      guessedBy: null,
       clues: [],
       turnOrder: [],
       revealAck: [],
       vote: null,
       result: null,
       end: null,
+      drawDeadline: null,
       createdAt: Date.now(),
     };
     this.rooms.set(code, room);
@@ -209,8 +295,12 @@ export class GameEngine {
     const room = this.requireRoom(userId);
     if (room.hostId !== userId) throw new GameError("Only the host can change the mode");
     if (room.status !== "lobby") throw new GameError("Can only change the mode in the lobby");
-    room.mode = mode === "drawing" ? "drawing" : "classic";
+    room.mode = this.normalizeMode(mode);
     this.deps.broadcast(room);
+  }
+
+  private normalizeMode(mode: RoomMode): RoomMode {
+    return mode === "drawing" ? "drawing" : mode === "szpont" ? "szpont" : "classic";
   }
 
   startGame(userId: string): void {
@@ -223,22 +313,24 @@ export class GameEngine {
     if (!allReady) throw new GameError("All players must be ready");
 
     const { word, category, hint } = pickRandomWord();
-    const impostor = room.players[Math.floor(Math.random() * room.players.length)];
+    const impostorIds = this.chooseImpostors(room);
 
     room.status = "reveal";
     room.round = 1;
     room.secretWord = word;
     room.category = category;
     room.hint = hint;
-    room.impostorId = impostor.id;
+    room.impostorIds = impostorIds;
+    room.guessedBy = null;
     room.clues = [];
     room.turnOrder = [];
     room.revealAck = [];
     room.vote = null;
     room.result = null;
     room.end = null;
+    room.drawDeadline = null;
     for (const p of room.players) {
-      p.isImpostor = p.id === impostor.id;
+      p.isImpostor = impostorIds.includes(p.id);
       p.isEliminated = false;
       p.isReady = true;
       p.hasSubmittedThisRound = false;
@@ -268,8 +360,8 @@ export class GameEngine {
     if (p.isEliminated) throw new GameError("Eliminated players can't submit clues");
     if (room.clues.some((c) => c.round === room.round && c.playerId === userId))
       throw new GameError("You already submitted this round");
-    // Classic mode is turn-based; drawing mode lets everyone draw at once.
-    if (room.mode === "classic" && this.currentTurnPlayerId(room) !== userId)
+    // Word modes (classic & szpont) are turn-based; drawing lets everyone draw at once.
+    if (room.mode !== "drawing" && this.currentTurnPlayerId(room) !== userId)
       throw new GameError("Wait for your turn");
 
     const clue: Clue = { id: `${room.round}-${userId}`, playerId: userId, clue: "", round: room.round };
@@ -288,6 +380,11 @@ export class GameEngine {
 
     room.clues.push(clue);
     p.hasSubmittedThisRound = true;
+    // Drawing is simultaneous & timed — once everyone has drawn, stop the clock.
+    if (room.mode === "drawing" && this.isRoundComplete(room)) {
+      this.clearDrawTimer(room.code);
+      room.drawDeadline = null;
+    }
     this.deps.broadcast(room);
   }
 
@@ -301,9 +398,16 @@ export class GameEngine {
       throw new GameError("Eliminated players can't start a vote");
     if (!this.isRoundComplete(room))
       throw new GameError("Wait until everyone has given a clue");
+    this.beginVote(room, userId);
+  }
+
+  private beginVote(room: Room, initiatorId: string): void {
+    if (room.status !== "playing") return;
+    this.clearDrawTimer(room.code);
+    room.drawDeadline = null;
     room.status = "voting";
     room.vote = {
-      initiatorId: userId,
+      initiatorId,
       votes: {},
       deadline: Date.now() + VOTE_SECONDS * 1000,
     };
@@ -383,15 +487,7 @@ export class GameEngine {
     if (room.status !== "results") return;
     if (room.hostId !== userId) throw new GameError("Only the host can continue");
 
-    const result = room.result;
-    if (result && !result.tie && result.eliminatedId) {
-      if (result.wasImpostor) {
-        return this.endGame(room, false, "eliminated");
-      }
-    }
-    if (this.alivePlayers(room).length <= 2) {
-      return this.endGame(room, true, "onevsone");
-    }
+    if (this.resolveWinIfOver(room)) return;
 
     // next round
     room.status = "playing";
@@ -402,9 +498,7 @@ export class GameEngine {
   }
 
   private maybeCheckLastManStanding(room: Room): void {
-    if (room.status === "playing" && this.alivePlayers(room).length <= 2) {
-      this.endGame(room, true, "onevsone");
-    }
+    if (room.status === "playing" || room.status === "results") this.resolveWinIfOver(room);
   }
 
   // ---- impostor guess ----
@@ -419,10 +513,13 @@ export class GameEngine {
 
     const correct = guess.trim().toLowerCase() === room.secretWord.toLowerCase();
     if (correct) {
+      room.guessedBy = userId;
       this.endGame(room, true, "guessed");
     } else {
+      // a wrong guess just removes this impostor; the game ends only if that
+      // tips a win condition (e.g. it was the last impostor → crew win).
       p.isEliminated = true;
-      this.endGame(room, false, "eliminated");
+      if (!this.resolveWinIfOver(room)) this.deps.broadcast(room);
     }
     return correct;
   }
@@ -431,6 +528,8 @@ export class GameEngine {
 
   private endGame(room: Room, impostorWon: boolean, winReason: "guessed" | "onevsone" | "eliminated"): void {
     this.clearVoteTimer(room.code);
+    this.clearDrawTimer(room.code);
+    room.drawDeadline = null;
     room.status = "ended";
     room.vote = null;
     room.result = null;
@@ -456,13 +555,15 @@ export class GameEngine {
     room.category = null;
     room.secretWord = null;
     room.hint = null;
-    room.impostorId = null;
+    room.impostorIds = [];
+    room.guessedBy = null;
     room.clues = [];
     room.turnOrder = [];
     room.revealAck = [];
     room.vote = null;
     room.result = null;
     room.end = null;
+    room.drawDeadline = null;
     for (const p of room.players) {
       p.isEliminated = false;
       p.isImpostor = false;
@@ -496,8 +597,17 @@ export class GameEngine {
     }
   }
 
+  private clearDrawTimer(code: string): void {
+    const t = this.drawTimers.get(code);
+    if (t) {
+      clearTimeout(t);
+      this.drawTimers.delete(code);
+    }
+  }
+
   private destroyRoom(code: string): void {
     this.clearVoteTimer(code);
+    this.clearDrawTimer(code);
     const room = this.rooms.get(code);
     if (room) for (const p of room.players) this.playerRoom.delete(p.id);
     this.rooms.delete(code);
@@ -523,9 +633,10 @@ export class GameEngine {
     const roundComplete = this.isRoundComplete(room);
     let revealedClues: Clue[];
     let currentTurnId: string | null = null;
-    if (room.mode === "classic") {
-      // Turn-based: every clue becomes public the moment it's submitted, so each
-      // player sees the clues before their turn and the impostor must bluff.
+    if (room.mode !== "drawing") {
+      // Word modes (classic & szpont) are turn-based: every clue becomes public
+      // the moment it's submitted, so each player sees the clues before their
+      // turn and the impostor must bluff.
       revealedClues = room.clues;
       currentTurnId = room.status === "playing" ? this.currentTurnPlayerId(room) : null;
     } else {
@@ -584,12 +695,16 @@ export class GameEngine {
 
     let end: PlayerView["end"] = null;
     if (ended && room.end) {
-      const imp = room.players.find((p) => p.id === room.impostorId);
+      const impostors = room.players.filter((p) => room.impostorIds.includes(p.id));
+      const guesser = room.guessedBy
+        ? room.players.find((p) => p.id === room.guessedBy)
+        : null;
       end = {
         impostorWon: room.end.impostorWon,
         winReason: room.end.winReason,
-        impostorId: room.impostorId ?? "",
-        impostorName: imp?.name ?? "Unknown",
+        impostorIds: room.impostorIds,
+        impostorNames: impostors.map((p) => p.name),
+        guesserName: guesser?.name ?? null,
       };
     }
 
@@ -617,6 +732,8 @@ export class GameEngine {
       clueHistory: revealedClues,
       currentTurnId,
       turnOrder: room.turnOrder,
+      drawDeadline: room.status === "playing" ? room.drawDeadline : null,
+      impostorCount: room.impostorIds.length,
       cluesThisRound,
       aliveCount: alive.length,
       vote,

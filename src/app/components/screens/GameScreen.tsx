@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { GlassCard } from "../ui/GlassCard";
 import { GameButton } from "../ui/GameButton";
 import { GameInput } from "../ui/GameInput";
 import { PlayerAvatar } from "../ui/PlayerAvatar";
+import { CountdownTimer } from "../ui/CountdownTimer";
 import { Send, Vote, Target, MessageSquare, History, AlertCircle, Users } from "lucide-react";
 import type { Player, ClueEntry } from "../../types";
 import type { RoomMode } from "../../lib/protocol";
@@ -23,6 +24,7 @@ interface GameScreenProps {
   hasSubmittedThisRound: boolean;
   currentTurnId: string | null;
   turnOrder: string[];
+  drawDeadline: number | null;
   onSubmitClue: (content: { text?: string; image?: string }) => void;
   onStartVote: () => void;
   onGuessWord: () => void;
@@ -41,6 +43,7 @@ export function GameScreen({
   hasSubmittedThisRound,
   currentTurnId,
   turnOrder,
+  drawDeadline,
   onSubmitClue,
   onStartVote,
   onGuessWord,
@@ -74,6 +77,11 @@ export function GameScreen({
     const i = turnOrder.indexOf(id);
     return i === -1 ? null : i + 1;
   };
+  // seconds left in a timed drawing round (memoized so broadcasts don't reset it)
+  const drawSecondsLeft = useMemo(
+    () => Math.max(0, Math.ceil(((drawDeadline ?? 0) - Date.now()) / 1000)),
+    [drawDeadline]
+  );
 
   return (
     <div className="min-h-screen mesh-bg flex flex-col">
@@ -97,6 +105,9 @@ export function GameScreen({
           </span>
         </div>
         <div className="flex items-center gap-2">
+          {isDrawing && drawDeadline && (
+            <CountdownTimer seconds={drawSecondsLeft} variant="orange" size="sm" />
+          )}
           <div className="px-3 py-1 rounded-lg bg-[#1E293B] border border-white/10 text-sm font-bold text-white">
             {t("game.round")} {round}
           </div>
@@ -316,7 +327,7 @@ export function GameScreen({
                       <p className="text-xs text-orange-300/80">{t("draw.impostorReminder", { hint: hint ?? "" })}</p>
                     </div>
                   )}
-                  <DrawingCanvas onSubmit={(image) => onSubmitClue({ image })} />
+                  <DrawingCanvas onSubmit={(image) => onSubmitClue({ image })} deadline={drawDeadline} />
                 </div>
               ) : (
                 <div>

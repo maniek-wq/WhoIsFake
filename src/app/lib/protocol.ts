@@ -3,7 +3,7 @@
 
 export type RoomStatus = "lobby" | "reveal" | "playing" | "voting" | "results" | "ended";
 export type WinReason = "guessed" | "onevsone" | "eliminated";
-export type RoomMode = "classic" | "drawing";
+export type RoomMode = "classic" | "drawing" | "szpont";
 
 export interface PublicUser {
   id: string;
@@ -77,6 +77,8 @@ export interface PlayerView {
   clueHistory: Clue[];
   currentTurnId: string | null;
   turnOrder: string[];
+  drawDeadline: number | null;
+  impostorCount: number;
   cluesThisRound: number;
   aliveCount: number;
   vote: {
@@ -97,8 +99,9 @@ export interface PlayerView {
   end: {
     impostorWon: boolean;
     winReason: WinReason;
-    impostorId: string;
-    impostorName: string;
+    impostorIds: string[];
+    impostorNames: string[];
+    guesserName: string | null;
   } | null;
 }
 

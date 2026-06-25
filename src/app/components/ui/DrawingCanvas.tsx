@@ -29,9 +29,11 @@ const SIZES = [3, 6, 12, 20];
 
 interface DrawingCanvasProps {
   onSubmit: (dataUrl: string) => void;
+  /** epoch ms; when reached, the current canvas auto-submits (timed round) */
+  deadline?: number | null;
 }
 
-export function DrawingCanvas({ onSubmit }: DrawingCanvasProps) {
+export function DrawingCanvas({ onSubmit, deadline }: DrawingCanvasProps) {
   const { t } = useI18n();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const itemsRef = useRef<Item[]>([]);
@@ -155,6 +157,23 @@ export function DrawingCanvas({ onSubmit }: DrawingCanvasProps) {
     const url = canvasRef.current?.toDataURL("image/jpeg", 0.82);
     if (url) onSubmit(url);
   };
+
+  // Auto-submit the current canvas when the shared drawing clock runs out.
+  useEffect(() => {
+    if (!deadline) return;
+    const fire = () => {
+      const url = canvasRef.current?.toDataURL("image/jpeg", 0.82);
+      if (url) onSubmit(url);
+    };
+    const ms = deadline - Date.now();
+    if (ms <= 0) {
+      fire();
+      return;
+    }
+    const id = setTimeout(fire, ms);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deadline]);
 
   const hasDrawing = itemsRef.current.length > 0;
 

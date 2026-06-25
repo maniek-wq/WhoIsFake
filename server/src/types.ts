@@ -12,7 +12,7 @@ export type RoomStatus =
 
 export type WinReason = "guessed" | "onevsone" | "eliminated";
 
-export type RoomMode = "classic" | "drawing";
+export type RoomMode = "classic" | "drawing" | "szpont";
 
 // ---- Persistent domain (users / friends) ----
 
@@ -102,12 +102,17 @@ export interface Room {
   category: string | null;
   secretWord: string | null;
   hint: string | null;
-  impostorId: string | null;
+  /** ids of every impostor this game (1 normally; several in "szpont" mode) */
+  impostorIds: string[];
+  /** id of the impostor who guessed the word correctly (for the end screen) */
+  guessedBy: string | null;
   clues: Clue[];
   /** randomized clue-giving order for the current round (alive player ids) */
   turnOrder: string[];
   revealAck: string[];
   vote: VoteState | null;
+  /** drawing-mode round deadline (epoch ms); null outside a timed draw round */
+  drawDeadline: number | null;
   result: {
     eliminatedId: string | null;
     wasImpostor: boolean;
@@ -157,6 +162,10 @@ export interface PlayerView {
   currentTurnId: string | null;
   /** clue-giving order for the current round (alive player ids, in turn order) */
   turnOrder: string[];
+  /** drawing-mode round deadline (epoch ms); null unless a timed draw round is live */
+  drawDeadline: number | null;
+  /** how many impostors there are this game (revealed so crew knows the odds) */
+  impostorCount: number;
   cluesThisRound: number;
   aliveCount: number;
   vote: {
@@ -177,8 +186,10 @@ export interface PlayerView {
   end: {
     impostorWon: boolean;
     winReason: WinReason;
-    impostorId: string;
-    impostorName: string;
+    impostorIds: string[];
+    impostorNames: string[];
+    /** name of the impostor who guessed the word, when winReason === "guessed" */
+    guesserName: string | null;
   } | null;
 }
 

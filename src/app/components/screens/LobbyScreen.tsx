@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { GlassCard } from "../ui/GlassCard";
 import { GameButton } from "../ui/GameButton";
 import { PlayerAvatar } from "../ui/PlayerAvatar";
-import { Copy, Check, Crown, Users, Wifi, ChevronRight, LogOut, Type, Palette } from "lucide-react";
+import { Copy, Check, Crown, Users, Wifi, ChevronRight, LogOut, Type, Palette, Ghost } from "lucide-react";
 import type { Player } from "../../types";
 import type { RoomMode } from "../../lib/protocol";
 import { useI18n } from "../../i18n/LanguageContext";
@@ -105,43 +105,44 @@ export function LobbyScreen({
             {/* Game mode */}
             <GlassCard className="p-5">
               <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">{t("create.mode")}</p>
-              {isHost ? (
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={() => onChangeMode("classic")}
-                    className={`flex flex-col items-center gap-1.5 py-3 rounded-xl border transition-all ${
-                      mode === "classic"
-                        ? "border-blue-500/40 bg-blue-500/10 text-blue-300"
-                        : "border-white/8 text-slate-400 hover:bg-white/5"
-                    }`}
-                  >
-                    <Type className="w-5 h-5" />
-                    <span className="text-xs font-semibold">{t("create.modeClassic")}</span>
-                  </button>
-                  <button
-                    onClick={() => onChangeMode("drawing")}
-                    className={`flex flex-col items-center gap-1.5 py-3 rounded-xl border transition-all ${
-                      mode === "drawing"
-                        ? "border-blue-500/40 bg-blue-500/10 text-blue-300"
-                        : "border-white/8 text-slate-400 hover:bg-white/5"
-                    }`}
-                  >
-                    <Palette className="w-5 h-5" />
-                    <span className="text-xs font-semibold">{t("create.modeDrawing")}</span>
-                  </button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 text-slate-300">
-                  {mode === "drawing" ? (
-                    <Palette className="w-4 h-4 text-blue-400" />
-                  ) : (
-                    <Type className="w-4 h-4 text-blue-400" />
-                  )}
-                  <span className="text-sm font-medium">
-                    {mode === "drawing" ? t("create.modeDrawing") : t("create.modeClassic")}
-                  </span>
-                </div>
-              )}
+              {(() => {
+                const MODES: { id: RoomMode; icon: typeof Type; label: string }[] = [
+                  { id: "classic", icon: Type, label: t("create.modeClassic") },
+                  { id: "drawing", icon: Palette, label: t("create.modeDrawing") },
+                  { id: "szpont", icon: Ghost, label: t("create.modeSzpont") },
+                ];
+                if (!isHost) {
+                  const cur = MODES.find((m) => m.id === mode) ?? MODES[0];
+                  const Icon = cur.icon;
+                  return (
+                    <div className="flex items-center gap-2 text-slate-300">
+                      <Icon className="w-4 h-4 text-blue-400" />
+                      <span className="text-sm font-medium">{cur.label}</span>
+                    </div>
+                  );
+                }
+                return (
+                  <div className="grid grid-cols-3 gap-2">
+                    {MODES.map((m) => {
+                      const Icon = m.icon;
+                      return (
+                        <button
+                          key={m.id}
+                          onClick={() => onChangeMode(m.id)}
+                          className={`flex flex-col items-center gap-1.5 py-3 rounded-xl border transition-all ${
+                            mode === m.id
+                              ? "border-blue-500/40 bg-blue-500/10 text-blue-300"
+                              : "border-white/8 text-slate-400 hover:bg-white/5"
+                          }`}
+                        >
+                          <Icon className="w-5 h-5" />
+                          <span className="text-xs font-semibold">{m.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
             </GlassCard>
 
             <GlassCard className="p-5">

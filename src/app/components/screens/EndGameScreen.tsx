@@ -10,8 +10,8 @@ import { useI18n } from "../../i18n/LanguageContext";
 
 interface EndGameScreenProps {
   impostorWon: boolean;
-  impostorName: string;
-  impostorIndex: number;
+  impostorIds: string[];
+  guesserName: string | null;
   secretWord: string;
   players: Player[];
   winReason: "guessed" | "onevsone" | "eliminated";
@@ -21,8 +21,8 @@ interface EndGameScreenProps {
 
 export function EndGameScreen({
   impostorWon,
-  impostorName,
-  impostorIndex,
+  impostorIds,
+  guesserName,
   secretWord,
   players,
   winReason,
@@ -31,6 +31,12 @@ export function EndGameScreen({
 }: EndGameScreenProps) {
   const { t } = useI18n();
   const fired = useRef(false);
+
+  const impostors = impostorIds
+    .map((id) => players.find((p) => p.id === id))
+    .filter((p): p is Player => Boolean(p));
+  const multi = impostors.length > 1;
+  const who = guesserName ?? impostors[0]?.name ?? "";
 
   useEffect(() => {
     if (fired.current) return;
@@ -62,11 +68,16 @@ export function EndGameScreen({
     }
   }, [impostorWon]);
 
-  const winReasonText: Record<typeof winReason, string> = {
-    guessed: t("end.reasonGuessed", { name: impostorName }),
-    onevsone: t("end.reasonOnevsone", { name: impostorName }),
-    eliminated: t("end.reasonEliminated"),
-  };
+  const reasonText =
+    winReason === "guessed"
+      ? t("end.reasonGuessed", { name: who })
+      : winReason === "eliminated"
+      ? multi
+        ? t("end.reasonEliminatedMulti")
+        : t("end.reasonEliminated")
+      : multi
+      ? t("end.reasonParity")
+      : t("end.reasonOnevsone", { name: who });
 
   return (
     <div className={`min-h-screen flex items-center justify-center px-4 py-10 ${
@@ -120,7 +131,7 @@ export function EndGameScreen({
             {impostorWon ? t("end.fakeWins") : t("end.impostorCaught")}
           </h1>
           <p className="text-slate-400 max-w-xs mx-auto leading-relaxed text-sm">
-            {winReasonText[winReason]}
+            {reasonText}
           </p>
         </motion.div>
 
@@ -148,17 +159,21 @@ export function EndGameScreen({
           transition={{ delay: 0.65 }}
         >
           <GlassCard className={`p-4 mb-6 border ${impostorWon ? "border-red-500/20 bg-red-500/5" : "border-white/10"}`}>
-            <p className="text-xs text-slate-500 mb-3">{t("end.impostorWas")}</p>
-            <div className="flex items-center justify-center gap-3">
-              <PlayerAvatar
-                name={impostorName}
-                index={impostorIndex}
-                size="md"
-                isImpostor
-              />
-              <span className="font-bold text-white text-lg" style={{ fontFamily: "Rajdhani, sans-serif" }}>
-                {impostorName}
-              </span>
+            <p className="text-xs text-slate-500 mb-3">{multi ? t("end.impostorsWere") : t("end.impostorWas")}</p>
+            <div className="flex items-center justify-center gap-5 flex-wrap">
+              {impostors.map((imp) => (
+                <div key={imp.id} className="flex items-center gap-3">
+                  <PlayerAvatar
+                    name={imp.name}
+                    index={players.findIndex((p) => p.id === imp.id)}
+                    size="md"
+                    isImpostor
+                  />
+                  <span className="font-bold text-white text-lg" style={{ fontFamily: "Rajdhani, sans-serif" }}>
+                    {imp.name}
+                  </span>
+                </div>
+              ))}
             </div>
           </GlassCard>
         </motion.div>
