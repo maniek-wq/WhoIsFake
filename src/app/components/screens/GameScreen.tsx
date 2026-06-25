@@ -67,7 +67,8 @@ export function GameScreen({
   const allSubmitted =
     activePlayers.length > 0 && activePlayers.every((p) => p.hasSubmittedThisRound);
   const canStartVote = allSubmitted && !me?.isEliminated;
-  const isMyTurn = currentTurnId === currentPlayerId;
+  // Drawing mode is simultaneous — everyone may draw at once (no turns).
+  const isMyTurn = isDrawing || currentTurnId === currentPlayerId;
   const currentTurnPlayer = players.find((p) => p.id === currentTurnId);
   const turnPosition = (id: string) => {
     const i = turnOrder.indexOf(id);
@@ -135,7 +136,7 @@ export function GameScreen({
                 />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
-                    {!player.isEliminated && turnPosition(player.id) && (
+                    {!isDrawing && !player.isEliminated && turnPosition(player.id) && (
                       <span className="text-[10px] text-slate-500 font-mono">#{turnPosition(player.id)}</span>
                     )}
                     <span className={`text-sm font-medium truncate ${player.isEliminated ? "line-through text-slate-600" : "text-slate-200"}`}>
@@ -236,7 +237,7 @@ export function GameScreen({
                           )}
                           <p className="text-xs text-slate-500 mb-1 truncate">{player?.name}</p>
                           {entry.image ? (
-                            <img src={entry.image} alt="" className="w-full rounded-lg border border-white/10 bg-[#0b1220]" />
+                            <img src={entry.image} alt="" className="w-full rounded-lg border border-white/10 bg-white" />
                           ) : (
                             <p className="font-bold text-slate-100" style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "1.05rem" }}>
                               {entry.clue}

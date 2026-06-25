@@ -193,6 +193,7 @@ export interface ClientToServerEvents {
   ) => void;
   "room:join": (p: { code: string }, cb: (res: Ack<{ code: string }>) => void) => void;
   "room:leave": () => void;
+  "room:mode": (p: { mode: RoomMode }) => void;
   "player:ready": (p: { ready: boolean }) => void;
   "game:start": () => void;
   "reveal:ack": () => void;

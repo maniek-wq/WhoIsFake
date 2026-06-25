@@ -97,6 +97,7 @@ export const translations: Record<Lang, Dict> = {
       allReady: "Wszyscy gotowi! Jedziemy 🎮",
       startGame: "Rozpocznij grę",
       waitingForPlayer: "Czekam na gracza…",
+      leave: "Wyjdź",
     },
     role: {
       hey: "Cześć",
@@ -333,6 +334,7 @@ export const translations: Record<Lang, Dict> = {
       allReady: "Everyone is ready! Let's go 🎮",
       startGame: "Start Game",
       waitingForPlayer: "Waiting for player…",
+      leave: "Leave",
     },
     role: {
       hey: "Hey",
@@ -486,6 +488,8 @@ export const serverMessagePl: Record<string, string> = {
   "Game already in progress": "Gra już trwa",
   "Room is full": "Pokój jest pełny",
   "Only the host can start": "Tylko host może rozpocząć",
+  "Only the host can change the mode": "Tylko host może zmienić tryb",
+  "Can only change the mode in the lobby": "Tryb można zmienić tylko w lobby",
   "Game already started": "Gra już się rozpoczęła",
   "All players must be ready": "Wszyscy gracze muszą być gotowi",
   "Not accepting clues right now": "Teraz nie można wysyłać wskazówek",

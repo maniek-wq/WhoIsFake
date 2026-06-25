@@ -100,7 +100,7 @@ export function VotingScreen({
                   >
                     <p className="text-xs text-slate-500 mb-1 truncate">{player?.name}</p>
                     {entry.image ? (
-                      <img src={entry.image} alt="" className="w-full rounded-lg border border-white/10 bg-[#0b1220]" />
+                      <img src={entry.image} alt="" className="w-full rounded-lg border border-white/10 bg-white" />
                     ) : (
                       <p
                         className="font-bold text-slate-100"

@@ -156,8 +156,11 @@ export default function App() {
             currentPlayerId={view.you.id}
             isHost={view.you.isHost}
             maxPlayers={view.maxPlayers}
+            mode={view.mode}
             onStartGame={() => emit("game:start")}
             onToggleReady={() => emit("player:ready", { ready: !view.you.isReady })}
+            onChangeMode={(mode) => emit("room:mode", { mode })}
+            onLeave={goHome}
           />
         )}
 

@@ -190,6 +190,7 @@ io.on("connection", (socket) => {
     })
   );
 
+  socket.on("room:mode", ({ mode }) => guard(() => engine.setMode(userId, mode)));
   socket.on("player:ready", ({ ready }) => guard(() => engine.setReady(userId, ready)));
   socket.on("game:start", () => guard(() => engine.startGame(userId)));
   socket.on("reveal:ack", () => guard(() => engine.ackReveal(userId)));

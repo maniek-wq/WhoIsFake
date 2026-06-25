@@ -19,10 +19,10 @@ interface Item { tool: Tool; color: string; size: number; points: Point[] }
 
 const W = 760;
 const H = 460;
-const BG = "#0b1220";
+const BG = "#FFFFFF"; // white "whiteboard" canvas
 
 const COLORS = [
-  "#FFFFFF", "#94A3B8", "#EF4444", "#F97316", "#FBBF24",
+  "#111827", "#64748B", "#EF4444", "#F97316", "#FBBF24",
   "#10B981", "#06B6D4", "#3B82F6", "#8B5CF6", "#EC4899",
 ];
 const SIZES = [3, 6, 12, 20];
@@ -237,7 +237,7 @@ export function DrawingCanvas({ onSubmit }: DrawingCanvasProps) {
       </div>
 
       {/* canvas */}
-      <div className="rounded-2xl overflow-hidden border border-white/10 bg-[#0b1220]">
+      <div className="rounded-2xl overflow-hidden border border-white/10 bg-white">
         <canvas
           ref={canvasRef}
           width={W}

@@ -3,8 +3,9 @@ import { motion, AnimatePresence } from "motion/react";
 import { GlassCard } from "../ui/GlassCard";
 import { GameButton } from "../ui/GameButton";
 import { PlayerAvatar } from "../ui/PlayerAvatar";
-import { Copy, Check, Crown, Users, Wifi, ChevronRight } from "lucide-react";
+import { Copy, Check, Crown, Users, Wifi, ChevronRight, LogOut, Type, Palette } from "lucide-react";
 import type { Player } from "../../types";
+import type { RoomMode } from "../../lib/protocol";
 import { useI18n } from "../../i18n/LanguageContext";
 
 interface LobbyScreenProps {
@@ -13,8 +14,11 @@ interface LobbyScreenProps {
   currentPlayerId: string;
   isHost: boolean;
   maxPlayers: number;
+  mode: RoomMode;
   onStartGame: () => void;
   onToggleReady: () => void;
+  onChangeMode: (mode: RoomMode) => void;
+  onLeave: () => void;
 }
 
 export function LobbyScreen({
@@ -23,8 +27,11 @@ export function LobbyScreen({
   currentPlayerId,
   isHost,
   maxPlayers,
+  mode,
   onStartGame,
   onToggleReady,
+  onChangeMode,
+  onLeave,
 }: LobbyScreenProps) {
   const { t } = useI18n();
   const [copied, setCopied] = useState(false);
@@ -56,9 +63,18 @@ export function LobbyScreen({
             WhoIsFake
           </span>
         </div>
-        <div className="flex items-center gap-2">
-          <Wifi className="w-3.5 h-3.5 text-emerald-400" />
-          <span className="text-xs text-slate-500">{t("lobby.connected")}</span>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Wifi className="w-3.5 h-3.5 text-emerald-400" />
+            <span className="text-xs text-slate-500">{t("lobby.connected")}</span>
+          </div>
+          <button
+            onClick={onLeave}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-slate-400 hover:text-red-300 hover:border-red-500/30 hover:bg-red-500/10 transition-all text-xs font-medium"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            {t("lobby.leave")}
+          </button>
         </div>
       </header>
 
@@ -84,6 +100,48 @@ export function LobbyScreen({
                 </motion.button>
               </div>
               <p className="text-xs text-slate-600">{t("lobby.share")}</p>
+            </GlassCard>
+
+            {/* Game mode */}
+            <GlassCard className="p-5">
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">{t("create.mode")}</p>
+              {isHost ? (
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => onChangeMode("classic")}
+                    className={`flex flex-col items-center gap-1.5 py-3 rounded-xl border transition-all ${
+                      mode === "classic"
+                        ? "border-blue-500/40 bg-blue-500/10 text-blue-300"
+                        : "border-white/8 text-slate-400 hover:bg-white/5"
+                    }`}
+                  >
+                    <Type className="w-5 h-5" />
+                    <span className="text-xs font-semibold">{t("create.modeClassic")}</span>
+                  </button>
+                  <button
+                    onClick={() => onChangeMode("drawing")}
+                    className={`flex flex-col items-center gap-1.5 py-3 rounded-xl border transition-all ${
+                      mode === "drawing"
+                        ? "border-blue-500/40 bg-blue-500/10 text-blue-300"
+                        : "border-white/8 text-slate-400 hover:bg-white/5"
+                    }`}
+                  >
+                    <Palette className="w-5 h-5" />
+                    <span className="text-xs font-semibold">{t("create.modeDrawing")}</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-slate-300">
+                  {mode === "drawing" ? (
+                    <Palette className="w-4 h-4 text-blue-400" />
+                  ) : (
+                    <Type className="w-4 h-4 text-blue-400" />
+                  )}
+                  <span className="text-sm font-medium">
+                    {mode === "drawing" ? t("create.modeDrawing") : t("create.modeClassic")}
+                  </span>
+                </div>
+              )}
             </GlassCard>
 
             <GlassCard className="p-5">

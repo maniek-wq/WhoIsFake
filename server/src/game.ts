@@ -205,6 +205,14 @@ export class GameEngine {
     this.deps.broadcast(room);
   }
 
+  setMode(userId: string, mode: RoomMode): void {
+    const room = this.requireRoom(userId);
+    if (room.hostId !== userId) throw new GameError("Only the host can change the mode");
+    if (room.status !== "lobby") throw new GameError("Can only change the mode in the lobby");
+    room.mode = mode === "drawing" ? "drawing" : "classic";
+    this.deps.broadcast(room);
+  }
+
   startGame(userId: string): void {
     const room = this.requireRoom(userId);
     if (room.hostId !== userId) throw new GameError("Only the host can start");
@@ -260,7 +268,8 @@ export class GameEngine {
     if (p.isEliminated) throw new GameError("Eliminated players can't submit clues");
     if (room.clues.some((c) => c.round === room.round && c.playerId === userId))
       throw new GameError("You already submitted this round");
-    if (this.currentTurnPlayerId(room) !== userId)
+    // Classic mode is turn-based; drawing mode lets everyone draw at once.
+    if (room.mode === "classic" && this.currentTurnPlayerId(room) !== userId)
       throw new GameError("Wait for your turn");
 
     const clue: Clue = { id: `${room.round}-${userId}`, playerId: userId, clue: "", round: room.round };
@@ -511,12 +520,23 @@ export class GameEngine {
     const ended = room.status === "ended";
     const alive = this.alivePlayers(room);
     const cluesThisRound = room.clues.filter((c) => c.round === room.round).length;
-    // Turn-based reveal: every clue becomes public the moment it's submitted,
-    // so each player sees the clues given before their turn and the impostor
-    // (going somewhere in the random order) has to bluff convincingly.
-    const revealedClues: Clue[] = room.clues;
-    const currentTurnId =
-      room.status === "playing" ? this.currentTurnPlayerId(room) : null;
+    const roundComplete = this.isRoundComplete(room);
+    let revealedClues: Clue[];
+    let currentTurnId: string | null = null;
+    if (room.mode === "classic") {
+      // Turn-based: every clue becomes public the moment it's submitted, so each
+      // player sees the clues before their turn and the impostor must bluff.
+      revealedClues = room.clues;
+      currentTurnId = room.status === "playing" ? this.currentTurnPlayerId(room) : null;
+    } else {
+      // Drawing: everyone draws simultaneously, so the round stays hidden until
+      // all have drawn, then reveals at once (and stays visible while voting).
+      const revealCurrent =
+        roundComplete || room.status === "voting" || room.status === "results";
+      revealedClues = room.clues.filter(
+        (c) => c.round < room.round || (c.round === room.round && revealCurrent)
+      );
+    }
 
     const players = room.players.map((p) => ({
       id: p.id,
