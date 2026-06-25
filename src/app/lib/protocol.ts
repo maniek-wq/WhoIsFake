@@ -75,6 +75,8 @@ export interface PlayerView {
   secretWord: string | null;
   hint: string | null;
   clueHistory: Clue[];
+  currentTurnId: string | null;
+  turnOrder: string[];
   cluesThisRound: number;
   aliveCount: number;
   vote: {

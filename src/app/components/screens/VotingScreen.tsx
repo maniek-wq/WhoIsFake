@@ -4,23 +4,37 @@ import { GlassCard } from "../ui/GlassCard";
 import { GameButton } from "../ui/GameButton";
 import { PlayerAvatar } from "../ui/PlayerAvatar";
 import { CountdownTimer } from "../ui/CountdownTimer";
-import { Vote, AlertTriangle } from "lucide-react";
-import type { Player } from "../../types";
+import { Vote, AlertTriangle, MessageSquare } from "lucide-react";
+import type { Player, ClueEntry } from "../../types";
 import { useI18n } from "../../i18n/LanguageContext";
 
 interface VotingScreenProps {
   players: Player[];
   currentPlayerId: string;
+  clueHistory: ClueEntry[];
+  round: number;
+  deadline: number;
   onVote: (targetId: string) => void;
   onTimerEnd: () => void;
 }
 
-export function VotingScreen({ players, currentPlayerId, onVote, onTimerEnd }: VotingScreenProps) {
+export function VotingScreen({
+  players,
+  currentPlayerId,
+  clueHistory,
+  round,
+  deadline,
+  onVote,
+  onTimerEnd,
+}: VotingScreenProps) {
   const { t } = useI18n();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [hasVoted, setHasVoted] = useState(false);
 
   const activePlayers = players.filter((p) => !p.isEliminated && p.id !== currentPlayerId);
+  const roundClues = clueHistory.filter((c) => c.round === round);
+  // sync the countdown to the server's authoritative deadline
+  const secondsLeft = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
 
   const handleVote = () => {
     if (!selectedId) return;
@@ -61,13 +75,46 @@ export function VotingScreen({ players, currentPlayerId, onVote, onTimerEnd }: V
         {/* Timer */}
         <div className="flex justify-center mb-6">
           <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-orange-500/10 border border-orange-500/20">
-            <CountdownTimer seconds={30} onComplete={onTimerEnd} variant="orange" size="lg" />
+            <CountdownTimer seconds={secondsLeft} onComplete={onTimerEnd} variant="orange" size="lg" />
             <div>
               <p className="text-orange-300 font-semibold">{t("voting.secondsLeft")}</p>
               <p className="text-xs text-slate-500">{t("voting.voteOrSkip")}</p>
             </div>
           </div>
         </div>
+
+        {/* Clue recap — review what everyone (incl. the impostor) wrote */}
+        {roundClues.length > 0 && (
+          <div className="mb-6">
+            <div className="flex items-center gap-2 mb-3 justify-center">
+              <MessageSquare className="w-4 h-4 text-orange-400" />
+              <p className="text-sm font-semibold text-slate-300">{t("voting.cluesTitle")}</p>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {roundClues.map((entry) => {
+                const player = players.find((p) => p.id === entry.playerId);
+                return (
+                  <div
+                    key={entry.id}
+                    className="p-3 rounded-xl bg-[#1E293B]/60 border border-white/8 text-center"
+                  >
+                    <p className="text-xs text-slate-500 mb-1 truncate">{player?.name}</p>
+                    {entry.image ? (
+                      <img src={entry.image} alt="" className="w-full rounded-lg border border-white/10 bg-[#0b1220]" />
+                    ) : (
+                      <p
+                        className="font-bold text-slate-100"
+                        style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "1.05rem" }}
+                      >
+                        {entry.clue}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {!hasVoted ? (
           <>

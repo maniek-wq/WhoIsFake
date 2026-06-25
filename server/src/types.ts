@@ -104,6 +104,8 @@ export interface Room {
   hint: string | null;
   impostorId: string | null;
   clues: Clue[];
+  /** randomized clue-giving order for the current round (alive player ids) */
+  turnOrder: string[];
   revealAck: string[];
   vote: VoteState | null;
   result: {
@@ -151,6 +153,10 @@ export interface PlayerView {
   /** hint: present only for the impostor */
   hint: string | null;
   clueHistory: Clue[];
+  /** id of the player whose turn it is to give a clue (null = round complete) */
+  currentTurnId: string | null;
+  /** clue-giving order for the current round (alive player ids, in turn order) */
+  turnOrder: string[];
   cluesThisRound: number;
   aliveCount: number;
   vote: {

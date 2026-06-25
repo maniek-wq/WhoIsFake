@@ -21,6 +21,8 @@ interface GameScreenProps {
   hint?: string;
   clueHistory: ClueEntry[];
   hasSubmittedThisRound: boolean;
+  currentTurnId: string | null;
+  turnOrder: string[];
   onSubmitClue: (content: { text?: string; image?: string }) => void;
   onStartVote: () => void;
   onGuessWord: () => void;
@@ -37,6 +39,8 @@ export function GameScreen({
   hint,
   clueHistory,
   hasSubmittedThisRound,
+  currentTurnId,
+  turnOrder,
   onSubmitClue,
   onStartVote,
   onGuessWord,
@@ -59,6 +63,16 @@ export function GameScreen({
   };
 
   const activePlayers = players.filter((p) => !p.isEliminated);
+  const me = players.find((p) => p.id === currentPlayerId);
+  const allSubmitted =
+    activePlayers.length > 0 && activePlayers.every((p) => p.hasSubmittedThisRound);
+  const canStartVote = allSubmitted && !me?.isEliminated;
+  const isMyTurn = currentTurnId === currentPlayerId;
+  const currentTurnPlayer = players.find((p) => p.id === currentTurnId);
+  const turnPosition = (id: string) => {
+    const i = turnOrder.indexOf(id);
+    return i === -1 ? null : i + 1;
+  };
 
   return (
     <div className="min-h-screen mesh-bg flex flex-col">
@@ -103,7 +117,9 @@ export function GameScreen({
             >
               <GlassCard
                 className={`p-3 flex items-center gap-3 border ${
-                  player.id === currentPlayerId
+                  player.id === currentTurnId
+                    ? "border-amber-400/40 bg-amber-400/5"
+                    : player.id === currentPlayerId
                     ? "border-blue-500/25 bg-blue-500/5"
                     : player.isEliminated
                     ? "border-white/5"
@@ -119,6 +135,9 @@ export function GameScreen({
                 />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
+                    {!player.isEliminated && turnPosition(player.id) && (
+                      <span className="text-[10px] text-slate-500 font-mono">#{turnPosition(player.id)}</span>
+                    )}
                     <span className={`text-sm font-medium truncate ${player.isEliminated ? "line-through text-slate-600" : "text-slate-200"}`}>
                       {player.name}
                     </span>
@@ -126,8 +145,14 @@ export function GameScreen({
                       <span className="text-[10px] bg-blue-500/20 text-blue-300 px-1 rounded">{t("common.you")}</span>
                     )}
                   </div>
-                  <p className="text-xs text-slate-600">
-                    {player.isEliminated ? t("game.eliminated") : player.hasSubmittedThisRound ? t("game.submitted") : t("game.thinking")}
+                  <p className={`text-xs ${player.id === currentTurnId && !player.isEliminated ? "text-amber-400" : "text-slate-600"}`}>
+                    {player.isEliminated
+                      ? t("game.eliminated")
+                      : player.hasSubmittedThisRound
+                      ? t("game.submitted")
+                      : player.id === currentTurnId
+                      ? t("game.givingClue")
+                      : t("game.thinking")}
                   </p>
                 </div>
               </GlassCard>
@@ -265,11 +290,18 @@ export function GameScreen({
 
           {/* Input area */}
           <div className="mt-auto">
-            <GlassCard glow={hasSubmittedThisRound ? "none" : "blue"} className="p-4">
+            <GlassCard glow={isMyTurn && !hasSubmittedThisRound ? "blue" : "none"} className="p-4">
               {hasSubmittedThisRound ? (
                 <div className="text-center py-2">
                   <p className="text-emerald-400 font-semibold mb-1">{t("game.clueSubmitted")}</p>
                   <p className="text-sm text-slate-500">{t("game.waitingOthers")}</p>
+                </div>
+              ) : !isMyTurn ? (
+                <div className="text-center py-3">
+                  <p className="text-amber-400 font-semibold mb-1">
+                    {t("game.turnOf", { name: currentTurnPlayer?.name ?? "" })}
+                  </p>
+                  <p className="text-sm text-slate-500">{t("game.turnWait")}</p>
                 </div>
               ) : isDrawing ? (
                 <div>
@@ -322,6 +354,7 @@ export function GameScreen({
                 variant="secondary"
                 size="md"
                 onClick={onStartVote}
+                disabled={!canStartVote}
                 icon={<Vote className="w-4 h-4" />}
               >
                 {t("game.startVote")}
@@ -337,6 +370,9 @@ export function GameScreen({
                 </GameButton>
               )}
             </div>
+            {!allSubmitted && !me?.isEliminated && (
+              <p className="text-xs text-slate-500 mt-2 text-center">{t("game.voteLocked")}</p>
+            )}
           </div>
         </main>
       </div>

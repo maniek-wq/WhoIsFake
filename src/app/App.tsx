@@ -186,6 +186,8 @@ export default function App() {
             hint={view.hint ?? ""}
             clueHistory={view.clueHistory}
             hasSubmittedThisRound={view.you.hasSubmittedThisRound}
+            currentTurnId={view.currentTurnId}
+            turnOrder={view.turnOrder}
             onSubmitClue={(content) => emit("clue:submit", content)}
             onStartVote={() => emit("vote:start")}
             onGuessWord={() => setGuessing(true)}
@@ -197,6 +199,9 @@ export default function App() {
             key="voting"
             players={players}
             currentPlayerId={view.you.id}
+            clueHistory={view.clueHistory}
+            round={view.round}
+            deadline={view.vote?.deadline ?? 0}
             onVote={(targetId) => emit("vote:cast", { targetId })}
             onTimerEnd={() => {
               /* server resolves on its own deadline */

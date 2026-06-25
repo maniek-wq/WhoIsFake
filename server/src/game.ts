@@ -55,6 +55,42 @@ export class GameEngine {
     return room.players.filter((p) => !p.isEliminated);
   }
 
+  /**
+   * Whose turn it is to give a clue this round: the first player in the
+   * round's turn order who is still alive and hasn't submitted yet.
+   * Returns null when every alive player has given their clue.
+   */
+  private currentTurnPlayerId(room: Room): string | null {
+    for (const id of room.turnOrder) {
+      const p = room.players.find((x) => x.id === id);
+      if (!p || p.isEliminated) continue;
+      const submitted = room.clues.some(
+        (c) => c.round === room.round && c.playerId === id
+      );
+      if (!submitted) return id;
+    }
+    return null;
+  }
+
+  /** every alive player has given their clue for the current round */
+  private isRoundComplete(room: Room): boolean {
+    return this.alivePlayers(room).length > 0 && this.currentTurnPlayerId(room) === null;
+  }
+
+  /**
+   * Start a fresh clue round: pick a random, role-independent turn order
+   * (so the order never reveals who the impostor is) and clear submissions.
+   */
+  private beginRound(room: Room): void {
+    const ids = this.alivePlayers(room).map((p) => p.id);
+    for (let i = ids.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [ids[i], ids[j]] = [ids[j], ids[i]];
+    }
+    room.turnOrder = ids;
+    for (const p of room.players) p.hasSubmittedThisRound = false;
+  }
+
   // ---- room lifecycle ----
 
   createRoom(user: User, maxPlayers: number, desiredCode?: string, mode: RoomMode = "classic"): Room {
@@ -77,6 +113,7 @@ export class GameEngine {
       hint: null,
       impostorId: null,
       clues: [],
+      turnOrder: [],
       revealAck: [],
       vote: null,
       result: null,
@@ -187,6 +224,7 @@ export class GameEngine {
     room.hint = hint;
     room.impostorId = impostor.id;
     room.clues = [];
+    room.turnOrder = [];
     room.revealAck = [];
     room.vote = null;
     room.result = null;
@@ -208,6 +246,7 @@ export class GameEngine {
     if (everyone) {
       room.status = "playing";
       room.round = 1;
+      this.beginRound(room);
     }
     this.deps.broadcast(room);
   }
@@ -221,6 +260,8 @@ export class GameEngine {
     if (p.isEliminated) throw new GameError("Eliminated players can't submit clues");
     if (room.clues.some((c) => c.round === room.round && c.playerId === userId))
       throw new GameError("You already submitted this round");
+    if (this.currentTurnPlayerId(room) !== userId)
+      throw new GameError("Wait for your turn");
 
     const clue: Clue = { id: `${room.round}-${userId}`, playerId: userId, clue: "", round: room.round };
 
@@ -246,7 +287,11 @@ export class GameEngine {
   startVote(userId: string): void {
     const room = this.requireRoom(userId);
     if (room.status !== "playing") throw new GameError("Can't start a vote now");
-    this.player(room, userId); // must be in room
+    const initiator = this.player(room, userId);
+    if (initiator.isEliminated)
+      throw new GameError("Eliminated players can't start a vote");
+    if (!this.isRoundComplete(room))
+      throw new GameError("Wait until everyone has given a clue");
     room.status = "voting";
     room.vote = {
       initiatorId: userId,
@@ -343,7 +388,7 @@ export class GameEngine {
     room.status = "playing";
     room.round += 1;
     room.result = null;
-    for (const p of room.players) p.hasSubmittedThisRound = false;
+    this.beginRound(room);
     this.deps.broadcast(room);
   }
 
@@ -404,6 +449,7 @@ export class GameEngine {
     room.hint = null;
     room.impostorId = null;
     room.clues = [];
+    room.turnOrder = [];
     room.revealAck = [];
     room.vote = null;
     room.result = null;
@@ -465,11 +511,12 @@ export class GameEngine {
     const ended = room.status === "ended";
     const alive = this.alivePlayers(room);
     const cluesThisRound = room.clues.filter((c) => c.round === room.round).length;
-    const roundComplete = cluesThisRound >= alive.length && alive.length > 0;
-
-    const revealedClues: Clue[] = room.clues.filter(
-      (c) => c.round < room.round || roundComplete
-    );
+    // Turn-based reveal: every clue becomes public the moment it's submitted,
+    // so each player sees the clues given before their turn and the impostor
+    // (going somewhere in the random order) has to bluff convincingly.
+    const revealedClues: Clue[] = room.clues;
+    const currentTurnId =
+      room.status === "playing" ? this.currentTurnPlayerId(room) : null;
 
     const players = room.players.map((p) => ({
       id: p.id,
@@ -548,6 +595,8 @@ export class GameEngine {
       secretWord: ended ? room.secretWord : youImpostor ? null : room.secretWord,
       hint: youImpostor ? room.hint : null,
       clueHistory: revealedClues,
+      currentTurnId,
+      turnOrder: room.turnOrder,
       cluesThisRound,
       aliveCount: alive.length,
       vote,
