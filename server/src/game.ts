@@ -4,9 +4,12 @@ import type { Store } from "./store.js";
 import type { Clue, PlayerView, Room, RoomMode, RoomPlayer, User } from "./types.js";
 
 const MIN_PLAYERS = 3;
+const MAX_PLAYERS_CAP = 10;
 const VOTE_SECONDS = 30;
 const DRAW_SECONDS = 60; // drawing-mode round timer (everyone draws at once)
 const DRAW_GRACE_MS = 2000; // grace so clients' real drawings beat the server cutoff
+const CLUE_SECONDS = 30; // word-mode per-turn timer (classic & szpont)
+const TURN_GRACE_MS = 2000; // grace so a player's typed clue beats the server cutoff
 const ROOM_TTL_MS = 1000 * 60 * 60 * 2; // abandoned-room sweep window
 const MAX_IMAGE_CHARS = 700_000; // ~500KB data-URL cap for drawing clues
 
@@ -30,6 +33,7 @@ export class GameEngine {
   private playerRoom = new Map<string, string>();
   private voteTimers = new Map<string, NodeJS.Timeout>();
   private drawTimers = new Map<string, NodeJS.Timeout>();
+  private turnTimers = new Map<string, NodeJS.Timeout>();
 
   constructor(private store: Store, private deps: EngineDeps) {
     setInterval(() => this.sweep(), 1000 * 60 * 10).unref?.();
@@ -136,6 +140,7 @@ export class GameEngine {
    */
   private beginRound(room: Room): void {
     this.clearDrawTimer(room.code);
+    this.clearTurnTimer(room.code);
     const ids = this.alivePlayers(room).map((p) => p.id);
     for (let i = ids.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -145,6 +150,7 @@ export class GameEngine {
     for (const p of room.players) p.hasSubmittedThisRound = false;
     if (room.mode === "drawing") {
       // Everyone draws at once against a shared 1-minute clock.
+      room.turnDeadline = null;
       room.drawDeadline = Date.now() + DRAW_SECONDS * 1000;
       const timer = setTimeout(
         () => this.endDrawPhase(room.code),
@@ -153,8 +159,44 @@ export class GameEngine {
       timer.unref?.();
       this.drawTimers.set(room.code, timer);
     } else {
+      // Word modes: each player has a turn clock; arm it for the first player.
       room.drawDeadline = null;
+      this.armTurnTimer(room);
     }
+  }
+
+  /** Word-mode per-turn clock for the current player (classic & szpont). */
+  private armTurnTimer(room: Room): void {
+    this.clearTurnTimer(room.code);
+    if (room.status !== "playing" || room.mode === "drawing" || this.currentTurnPlayerId(room) === null) {
+      room.turnDeadline = null;
+      return;
+    }
+    room.turnDeadline = Date.now() + CLUE_SECONDS * 1000;
+    const timer = setTimeout(() => this.endTurn(room.code), CLUE_SECONDS * 1000 + TURN_GRACE_MS);
+    timer.unref?.();
+    this.turnTimers.set(room.code, timer);
+  }
+
+  /** A player's turn clock expired: submit a blank clue for them and move on. */
+  private endTurn(code: string): void {
+    const room = this.rooms.get(code);
+    if (!room || room.status !== "playing" || room.mode === "drawing") return;
+    this.clearTurnTimer(code);
+    const current = this.currentTurnPlayerId(room);
+    if (current === null) {
+      room.turnDeadline = null;
+      return;
+    }
+    room.clues.push({ id: `${room.round}-${current}`, playerId: current, clue: "", round: room.round });
+    const p = room.players.find((x) => x.id === current);
+    if (p) p.hasSubmittedThisRound = true;
+    if (this.isRoundComplete(room)) {
+      room.turnDeadline = null;
+    } else {
+      this.armTurnTimer(room);
+    }
+    this.deps.broadcast(room);
   }
 
   /** Drawing clock expired: blank-submit anyone who didn't draw, then vote. */
@@ -179,7 +221,7 @@ export class GameEngine {
 
   createRoom(user: User, maxPlayers: number, desiredCode?: string, mode: RoomMode = "classic"): Room {
     if (this.playerRoom.has(user.id)) this.leaveRoom(user.id);
-    const max = Math.min(5, Math.max(3, maxPlayers));
+    const max = Math.min(MAX_PLAYERS_CAP, Math.max(MIN_PLAYERS, Math.floor(maxPlayers)));
     const wanted = (desiredCode ?? "").toUpperCase().trim();
     let code = /^[A-Z0-9]{6}$/.test(wanted) && !this.rooms.has(wanted) ? wanted : roomCode();
     while (this.rooms.has(code)) code = roomCode();
@@ -204,6 +246,7 @@ export class GameEngine {
       result: null,
       end: null,
       drawDeadline: null,
+      turnDeadline: null,
       createdAt: Date.now(),
     };
     this.rooms.set(code, room);
@@ -240,7 +283,9 @@ export class GameEngine {
     if (!room) return null;
     this.playerRoom.delete(userId);
 
-    if (room.status === "lobby") {
+    if (room.status === "lobby" || room.status === "ended") {
+      // in the lobby or once the game is over there's nothing to resolve —
+      // drop the player entirely so they stop receiving this room's state
       room.players = room.players.filter((p) => p.id !== userId);
     } else {
       // mid-game: eliminate the leaver so the game can resolve
@@ -268,6 +313,8 @@ export class GameEngine {
     // a departure may complete a round or finish a vote
     this.maybeResolveVote(room);
     this.maybeCheckLastManStanding(room);
+    // if the player whose turn it was left, hand the clock to the next player
+    if (room.status === "playing" && room.mode !== "drawing") this.armTurnTimer(room);
     this.deps.broadcast(room);
     return room;
   }
@@ -303,6 +350,26 @@ export class GameEngine {
     return mode === "drawing" ? "drawing" : mode === "szpont" ? "szpont" : "classic";
   }
 
+  setMaxPlayers(userId: string, maxPlayers: number): void {
+    const room = this.requireRoom(userId);
+    if (room.hostId !== userId) throw new GameError("Only the host can change settings");
+    if (room.status !== "lobby") throw new GameError("Can only change settings in the lobby");
+    const max = Math.min(MAX_PLAYERS_CAP, Math.max(MIN_PLAYERS, Math.floor(maxPlayers)));
+    if (max < room.players.length) throw new GameError("Can't set below the current player count");
+    room.maxPlayers = max;
+    this.deps.broadcast(room);
+  }
+
+  /** Host removes another player from the lobby. */
+  kickPlayer(hostId: string, targetId: string): void {
+    const room = this.requireRoom(hostId);
+    if (room.hostId !== hostId) throw new GameError("Only the host can remove players");
+    if (room.status !== "lobby") throw new GameError("Can only remove players in the lobby");
+    if (targetId === hostId) throw new GameError("Host can't remove themselves");
+    if (!room.players.some((p) => p.id === targetId)) throw new GameError("Player not found in room");
+    this.leaveRoom(targetId);
+  }
+
   startGame(userId: string): void {
     const room = this.requireRoom(userId);
     if (room.hostId !== userId) throw new GameError("Only the host can start");
@@ -329,6 +396,7 @@ export class GameEngine {
     room.result = null;
     room.end = null;
     room.drawDeadline = null;
+    room.turnDeadline = null;
     for (const p of room.players) {
       p.isImpostor = impostorIds.includes(p.id);
       p.isEliminated = false;
@@ -380,10 +448,18 @@ export class GameEngine {
 
     room.clues.push(clue);
     p.hasSubmittedThisRound = true;
-    // Drawing is simultaneous & timed — once everyone has drawn, stop the clock.
-    if (room.mode === "drawing" && this.isRoundComplete(room)) {
-      this.clearDrawTimer(room.code);
-      room.drawDeadline = null;
+    if (room.mode === "drawing") {
+      // simultaneous & timed — once everyone has drawn, stop the clock
+      if (this.isRoundComplete(room)) {
+        this.clearDrawTimer(room.code);
+        room.drawDeadline = null;
+      }
+    } else if (this.isRoundComplete(room)) {
+      this.clearTurnTimer(room.code);
+      room.turnDeadline = null;
+    } else {
+      // hand the clock to the next player in the turn order
+      this.armTurnTimer(room);
     }
     this.deps.broadcast(room);
   }
@@ -404,7 +480,9 @@ export class GameEngine {
   private beginVote(room: Room, initiatorId: string): void {
     if (room.status !== "playing") return;
     this.clearDrawTimer(room.code);
+    this.clearTurnTimer(room.code);
     room.drawDeadline = null;
+    room.turnDeadline = null;
     room.status = "voting";
     room.vote = {
       initiatorId,
@@ -529,7 +607,9 @@ export class GameEngine {
   private endGame(room: Room, impostorWon: boolean, winReason: "guessed" | "onevsone" | "eliminated"): void {
     this.clearVoteTimer(room.code);
     this.clearDrawTimer(room.code);
+    this.clearTurnTimer(room.code);
     room.drawDeadline = null;
+    room.turnDeadline = null;
     room.status = "ended";
     room.vote = null;
     room.result = null;
@@ -564,6 +644,7 @@ export class GameEngine {
     room.result = null;
     room.end = null;
     room.drawDeadline = null;
+    room.turnDeadline = null;
     for (const p of room.players) {
       p.isEliminated = false;
       p.isImpostor = false;
@@ -605,9 +686,18 @@ export class GameEngine {
     }
   }
 
+  private clearTurnTimer(code: string): void {
+    const t = this.turnTimers.get(code);
+    if (t) {
+      clearTimeout(t);
+      this.turnTimers.delete(code);
+    }
+  }
+
   private destroyRoom(code: string): void {
     this.clearVoteTimer(code);
     this.clearDrawTimer(code);
+    this.clearTurnTimer(code);
     const room = this.rooms.get(code);
     if (room) for (const p of room.players) this.playerRoom.delete(p.id);
     this.rooms.delete(code);
@@ -708,10 +798,19 @@ export class GameEngine {
       };
     }
 
+    // "szpont" is a hidden mode: it must be indistinguishable from a classic
+    // game during play. Only the host (who chose it) sees the real mode; nobody
+    // is told the impostor count until the end screen reveals every impostor.
+    const isHostView = room.hostId === userId;
+    const reportedMode =
+      room.mode === "szpont" && !isHostView ? "classic" : room.mode;
+    const reportedImpostorCount =
+      room.status === "ended" || room.mode !== "szpont" ? room.impostorIds.length : 1;
+
     return {
       roomCode: room.code,
       status: room.status,
-      mode: room.mode,
+      mode: reportedMode,
       maxPlayers: room.maxPlayers,
       round: room.round,
       hostId: room.hostId,
@@ -733,7 +832,8 @@ export class GameEngine {
       currentTurnId,
       turnOrder: room.turnOrder,
       drawDeadline: room.status === "playing" ? room.drawDeadline : null,
-      impostorCount: room.impostorIds.length,
+      turnDeadline: room.status === "playing" && room.mode !== "drawing" ? room.turnDeadline : null,
+      impostorCount: reportedImpostorCount,
       cluesThisRound,
       aliveCount: alive.length,
       vote,

@@ -141,6 +141,7 @@ export default function App() {
             key="create"
             onBack={() => setRoute("landing")}
             onGameCreated={handleGameCreated}
+            loggedInName={user && !user.isGuest ? user.username : undefined}
           />
         )}
 
@@ -160,6 +161,8 @@ export default function App() {
             onStartGame={() => emit("game:start")}
             onToggleReady={() => emit("player:ready", { ready: !view.you.isReady })}
             onChangeMode={(mode) => emit("room:mode", { mode })}
+            onChangeMaxPlayers={(n) => emit("room:maxPlayers", { maxPlayers: n })}
+            onKick={(playerId) => emit("room:kick", { targetId: playerId })}
             onLeave={goHome}
           />
         )}
@@ -193,9 +196,11 @@ export default function App() {
             currentTurnId={view.currentTurnId}
             turnOrder={view.turnOrder}
             drawDeadline={view.drawDeadline}
+            turnDeadline={view.turnDeadline}
             onSubmitClue={(content) => emit("clue:submit", content)}
             onStartVote={() => emit("vote:start")}
             onGuessWord={() => setGuessing(true)}
+            onLeave={goHome}
           />
         )}
 
@@ -211,6 +216,7 @@ export default function App() {
             onTimerEnd={() => {
               /* server resolves on its own deadline */
             }}
+            onLeave={goHome}
           />
         )}
 

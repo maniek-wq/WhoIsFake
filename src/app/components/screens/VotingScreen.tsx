@@ -2,9 +2,8 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { GlassCard } from "../ui/GlassCard";
 import { GameButton } from "../ui/GameButton";
-import { PlayerAvatar } from "../ui/PlayerAvatar";
 import { CountdownTimer } from "../ui/CountdownTimer";
-import { Vote, AlertTriangle, MessageSquare } from "lucide-react";
+import { Vote, AlertTriangle, LogOut } from "lucide-react";
 import type { Player, ClueEntry } from "../../types";
 import { useI18n } from "../../i18n/LanguageContext";
 
@@ -16,7 +15,10 @@ interface VotingScreenProps {
   deadline: number;
   onVote: (targetId: string) => void;
   onTimerEnd: () => void;
+  onLeave: () => void;
 }
+
+const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 export function VotingScreen({
   players,
@@ -26,15 +28,25 @@ export function VotingScreen({
   deadline,
   onVote,
   onTimerEnd,
+  onLeave,
 }: VotingScreenProps) {
   const { t } = useI18n();
+  // selectedId holds the ANSWER's author id — you vote on answers, not faces
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [hasVoted, setHasVoted] = useState(false);
-
-  const activePlayers = players.filter((p) => !p.isEliminated && p.id !== currentPlayerId);
-  const roundClues = clueHistory.filter((c) => c.round === round);
   // sync the countdown to the server's authoritative deadline
   const secondsLeft = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+
+  // Vote on ANSWERS, anonymized: every other alive player's clue, no names.
+  const votableClues = clueHistory
+    .filter((c) => c.round === round)
+    .filter((c) => {
+      const author = players.find((p) => p.id === c.playerId);
+      return Boolean(author) && !author!.isEliminated && c.playerId !== currentPlayerId;
+    });
+
+  const selectedIndex = votableClues.findIndex((c) => c.playerId === selectedId);
+  const selectedClue = selectedIndex >= 0 ? votableClues[selectedIndex] : null;
 
   const handleVote = () => {
     if (!selectedId) return;
@@ -47,6 +59,16 @@ export function VotingScreen({
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-orange-500/5 blur-[100px]" />
       </div>
+
+      {/* Leave */}
+      <button
+        onClick={onLeave}
+        title={t("lobby.leave")}
+        className="fixed top-4 left-4 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-slate-400 hover:text-red-300 hover:border-red-500/30 hover:bg-red-500/10 transition-all text-xs font-medium"
+      >
+        <LogOut className="w-3.5 h-3.5" />
+        {t("lobby.leave")}
+      </button>
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -69,7 +91,7 @@ export function VotingScreen({
           >
             {t("voting.title")}
           </h2>
-          <p className="text-slate-400 text-sm">{t("voting.subtitle")}</p>
+          <p className="text-slate-400 text-sm">{t("voting.pickAnswer")}</p>
         </div>
 
         {/* Timer */}
@@ -83,83 +105,41 @@ export function VotingScreen({
           </div>
         </div>
 
-        {/* Clue recap — review what everyone (incl. the impostor) wrote */}
-        {roundClues.length > 0 && (
-          <div className="mb-6">
-            <div className="flex items-center gap-2 mb-3 justify-center">
-              <MessageSquare className="w-4 h-4 text-orange-400" />
-              <p className="text-sm font-semibold text-slate-300">{t("voting.cluesTitle")}</p>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {roundClues.map((entry) => {
-                const player = players.find((p) => p.id === entry.playerId);
-                return (
-                  <div
-                    key={entry.id}
-                    className="p-3 rounded-xl bg-[#1E293B]/60 border border-white/8 text-center"
-                  >
-                    <p className="text-xs text-slate-500 mb-1 truncate">{player?.name}</p>
-                    {entry.image ? (
-                      <img src={entry.image} alt="" className="w-full rounded-lg border border-white/10 bg-white" />
-                    ) : (
-                      <p
-                        className="font-bold text-slate-100"
-                        style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "1.05rem" }}
-                      >
-                        {entry.clue}
-                      </p>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
         {!hasVoted ? (
           <>
-            {/* Player cards */}
+            {/* Answer cards (anonymized) */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
               <AnimatePresence>
-                {activePlayers.map((player, idx) => {
-                  const playerIdx = players.indexOf(player);
-                  const isSelected = selectedId === player.id;
+                {votableClues.map((entry, idx) => {
+                  const isSelected = selectedId === entry.playerId;
                   return (
                     <motion.div
-                      key={player.id}
+                      key={entry.id}
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: idx * 0.07 }}
+                      transition={{ delay: idx * 0.06 }}
                     >
                       <GlassCard
-                        onClick={() => setSelectedId(isSelected ? null : player.id)}
+                        onClick={() => setSelectedId(isSelected ? null : entry.playerId)}
                         className={`
-                          p-4 cursor-pointer text-center transition-all duration-200
+                          p-4 cursor-pointer text-center transition-all duration-200 min-h-[96px] flex flex-col items-center justify-center gap-2
                           ${isSelected
                             ? "border-orange-400/50 bg-orange-500/10 shadow-[0_0_20px_rgba(249,115,22,0.2)]"
                             : "border-white/8 hover:border-white/20 hover:bg-white/3"
                           }
                         `}
                       >
-                        <div className="flex justify-center mb-3">
-                          <div className={`relative ${isSelected ? "ring-2 ring-orange-400 ring-offset-2 ring-offset-[#111827] rounded-full" : ""}`}>
-                            <PlayerAvatar
-                              name={player.name}
-                              index={playerIdx}
-                              size="lg"
-                              isSelected={isSelected}
-                            />
-                          </div>
-                        </div>
-                        <p className="font-semibold text-slate-200 truncate text-sm">{player.name}</p>
-                        {isSelected && (
-                          <motion.p
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            className="text-xs text-orange-400 mt-1 font-medium"
-                          >
-                            {t("voting.selected")}
-                          </motion.p>
+                        <span className={`text-[10px] font-bold uppercase tracking-wider ${isSelected ? "text-orange-400" : "text-slate-600"}`}>
+                          {LETTERS[idx] ?? "?"}
+                        </span>
+                        {entry.image ? (
+                          <img src={entry.image} alt="" className="w-full rounded-lg border border-white/10 bg-white" />
+                        ) : entry.clue ? (
+                          <p className="font-bold text-slate-100" style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "1.2rem" }}>
+                            {entry.clue}
+                          </p>
+                        ) : (
+                          <p className="text-slate-600 text-sm italic">{t("voting.noAnswer")}</p>
                         )}
                       </GlassCard>
                     </motion.div>
@@ -168,7 +148,7 @@ export function VotingScreen({
               </AnimatePresence>
             </div>
 
-            {selectedId && (
+            {selectedClue && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -176,7 +156,7 @@ export function VotingScreen({
               >
                 <p className="text-sm text-orange-300/80 flex items-center gap-2">
                   <AlertTriangle className="w-4 h-4 text-orange-400 flex-shrink-0" />
-                  {t("voting.votingOut")} <strong>{players.find((p) => p.id === selectedId)?.name}</strong>. {t("voting.cannotUndo")}
+                  {t("voting.votingAnswer")} <strong>{LETTERS[selectedIndex] ?? "?"}</strong>. {t("voting.cannotUndo")}
                 </p>
               </motion.div>
             )}

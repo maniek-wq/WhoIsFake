@@ -94,6 +94,9 @@ const io = new Server<ClientToServerEvents, ServerToClientEvents, {}, SocketData
 let engine: GameEngine;
 const broadcast = (room: Room) => {
   for (const p of room.players) {
+    // Don't push room state to players who left or dropped — otherwise a ghost
+    // recipient keeps getting yanked back into the game (e.g. the end screen).
+    if (!p.connected) continue;
     io.to(userRoom(p.id)).emit("state", engine.viewFor(room, p.id));
   }
 };
@@ -191,6 +194,17 @@ io.on("connection", (socket) => {
   );
 
   socket.on("room:mode", ({ mode }) => guard(() => engine.setMode(userId, mode)));
+  socket.on("room:maxPlayers", ({ maxPlayers }) =>
+    guard(() => engine.setMaxPlayers(userId, maxPlayers))
+  );
+  socket.on("room:kick", ({ targetId }) =>
+    guard(() => {
+      engine.kickPlayer(userId, targetId);
+      presence.setRoom(targetId, null);
+      io.to(userRoom(targetId)).emit("state", null);
+      refreshFriendsOf(targetId);
+    })
+  );
   socket.on("player:ready", ({ ready }) => guard(() => engine.setReady(userId, ready)));
   socket.on("game:start", () => guard(() => engine.startGame(userId)));
   socket.on("reveal:ack", () => guard(() => engine.ackReveal(userId)));

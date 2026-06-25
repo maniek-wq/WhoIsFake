@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { GlassCard } from "../ui/GlassCard";
 import { GameButton } from "../ui/GameButton";
 import { PlayerAvatar } from "../ui/PlayerAvatar";
-import { Copy, Check, Crown, Users, Wifi, ChevronRight, LogOut, Type, Palette, Ghost } from "lucide-react";
+import { Copy, Check, Crown, Users, Wifi, ChevronRight, LogOut, Type, Palette, Ghost, Minus, Plus, X } from "lucide-react";
 import type { Player } from "../../types";
 import type { RoomMode } from "../../lib/protocol";
 import { useI18n } from "../../i18n/LanguageContext";
@@ -18,8 +18,13 @@ interface LobbyScreenProps {
   onStartGame: () => void;
   onToggleReady: () => void;
   onChangeMode: (mode: RoomMode) => void;
+  onChangeMaxPlayers: (n: number) => void;
+  onKick: (playerId: string) => void;
   onLeave: () => void;
 }
+
+const MIN_PLAYERS = 3;
+const MAX_PLAYERS = 10;
 
 export function LobbyScreen({
   roomCode,
@@ -31,6 +36,8 @@ export function LobbyScreen({
   onStartGame,
   onToggleReady,
   onChangeMode,
+  onChangeMaxPlayers,
+  onKick,
   onLeave,
 }: LobbyScreenProps) {
   const { t } = useI18n();
@@ -151,10 +158,33 @@ export function LobbyScreen({
                   <Users className="w-4 h-4" />
                   <span className="text-sm font-medium">{t("lobby.players")}</span>
                 </div>
-                <span className="text-sm font-bold">
-                  <span className="text-blue-400">{players.length}</span>
-                  <span className="text-slate-600">/{maxPlayers}</span>
-                </span>
+                {isHost ? (
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => onChangeMaxPlayers(maxPlayers - 1)}
+                      disabled={maxPlayers <= Math.max(MIN_PLAYERS, players.length)}
+                      className="w-7 h-7 rounded-lg bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 disabled:opacity-30 flex items-center justify-center"
+                    >
+                      <Minus className="w-3.5 h-3.5" />
+                    </button>
+                    <span className="text-sm font-bold min-w-[2.75rem] text-center">
+                      <span className="text-blue-400">{players.length}</span>
+                      <span className="text-slate-600">/{maxPlayers}</span>
+                    </span>
+                    <button
+                      onClick={() => onChangeMaxPlayers(maxPlayers + 1)}
+                      disabled={maxPlayers >= MAX_PLAYERS}
+                      className="w-7 h-7 rounded-lg bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 disabled:opacity-30 flex items-center justify-center"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <span className="text-sm font-bold">
+                    <span className="text-blue-400">{players.length}</span>
+                    <span className="text-slate-600">/{maxPlayers}</span>
+                  </span>
+                )}
               </div>
 
               {/* Progress bar */}
@@ -262,6 +292,15 @@ export function LobbyScreen({
                           </div>
                         </div>
                         <div className={`w-2 h-2 rounded-full ${player.isReady ? "bg-emerald-400" : "bg-slate-600"}`} />
+                        {isHost && player.id !== currentPlayerId && (
+                          <button
+                            onClick={() => onKick(player.id)}
+                            title={t("lobby.kick")}
+                            className="w-7 h-7 rounded-lg bg-white/5 border border-white/10 text-slate-500 hover:text-red-300 hover:border-red-500/30 hover:bg-red-500/10 transition-all flex items-center justify-center flex-shrink-0"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </GlassCard>
                     </motion.div>
                   ))}

@@ -133,20 +133,6 @@ export function RoleRevealScreen({
                   )}
                 </motion.div>
 
-                {/* Multi-impostor warning (szpont) */}
-                {impostorCount > 1 && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.45 }}
-                    className="mb-5 text-center px-4 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/25"
-                  >
-                    <p className="text-sm font-semibold text-amber-300">
-                      👻 {t("role.multiImpostors", { n: impostorCount })}
-                    </p>
-                  </motion.div>
-                )}
-
                 {/* Secret Info Card */}
                 <motion.div
                   initial={{ opacity: 0, scale: 0.95 }}

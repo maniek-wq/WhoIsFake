@@ -78,6 +78,7 @@ export interface PlayerView {
   currentTurnId: string | null;
   turnOrder: string[];
   drawDeadline: number | null;
+  turnDeadline: number | null;
   impostorCount: number;
   cluesThisRound: number;
   aliveCount: number;

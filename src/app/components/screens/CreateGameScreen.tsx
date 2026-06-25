@@ -10,6 +10,8 @@ import type { RoomMode } from "../../lib/protocol";
 interface CreateGameScreenProps {
   onBack: () => void;
   onGameCreated: (roomCode: string, playerName: string, maxPlayers: number, mode: RoomMode) => void;
+  /** when set, the user is signed in — skip the nickname field and use this name */
+  loggedInName?: string;
 }
 
 function generateRoomCode() {
@@ -17,8 +19,9 @@ function generateRoomCode() {
   return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
 }
 
-export function CreateGameScreen({ onBack, onGameCreated }: CreateGameScreenProps) {
+export function CreateGameScreen({ onBack, onGameCreated, loggedInName }: CreateGameScreenProps) {
   const { t } = useI18n();
+  const isSignedIn = Boolean(loggedInName);
   const [nickname, setNickname] = useState("");
   const [maxPlayers, setMaxPlayers] = useState(4);
   const [mode, setMode] = useState<RoomMode>("classic");
@@ -33,6 +36,10 @@ export function CreateGameScreen({ onBack, onGameCreated }: CreateGameScreenProp
   };
 
   const handleCreate = () => {
+    if (isSignedIn) {
+      onGameCreated(roomCode, loggedInName!, maxPlayers, mode);
+      return;
+    }
     if (!nickname.trim()) {
       setError(t("create.errNick"));
       return;
@@ -98,16 +105,27 @@ export function CreateGameScreen({ onBack, onGameCreated }: CreateGameScreenProp
             <p className="text-xs text-slate-600 mt-2">{t("create.share")}</p>
           </div>
 
-          {/* Nickname */}
-          <GameInput
-            label={t("create.nickname")}
-            placeholder={t("create.nicknamePlaceholder")}
-            value={nickname}
-            onChange={(e) => { setNickname(e.target.value); setError(""); }}
-            error={error}
-            maxLength={16}
-            onKeyDown={(e) => e.key === "Enter" && handleCreate()}
-          />
+          {/* Nickname (only for guests; signed-in users use their account name) */}
+          {isSignedIn ? (
+            <div>
+              <label className="text-sm font-medium text-slate-400 uppercase tracking-wider block mb-2">
+                {t("create.nickname")}
+              </label>
+              <div className="px-4 py-3 rounded-xl bg-[#0F172A]/80 border border-white/10 text-slate-200 font-semibold">
+                {loggedInName}
+              </div>
+            </div>
+          ) : (
+            <GameInput
+              label={t("create.nickname")}
+              placeholder={t("create.nicknamePlaceholder")}
+              value={nickname}
+              onChange={(e) => { setNickname(e.target.value); setError(""); }}
+              error={error}
+              maxLength={16}
+              onKeyDown={(e) => e.key === "Enter" && handleCreate()}
+            />
+          )}
 
           {/* Game mode */}
           <div>
@@ -145,14 +163,14 @@ export function CreateGameScreen({ onBack, onGameCreated }: CreateGameScreenProp
             <label className="text-sm font-medium text-slate-400 uppercase tracking-wider block mb-3">
               {t("create.maxPlayers")}
             </label>
-            <div className="grid grid-cols-3 gap-2">
-              {[3, 4, 5].map((n) => (
+            <div className="grid grid-cols-4 gap-2">
+              {[3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
                 <motion.button
                   key={n}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setMaxPlayers(n)}
                   className={`
-                    py-3 rounded-xl border font-semibold transition-all
+                    py-2.5 rounded-xl border font-semibold transition-all
                     flex flex-col items-center gap-1
                     ${maxPlayers === n
                       ? "bg-blue-600 border-blue-500 text-white shadow-[0_0_16px_rgba(37,99,235,0.4)]"
@@ -160,7 +178,7 @@ export function CreateGameScreen({ onBack, onGameCreated }: CreateGameScreenProp
                     }
                   `}
                 >
-                  <Users className="w-4 h-4" />
+                  <Users className="w-3.5 h-3.5" />
                   <span>{n}</span>
                 </motion.button>
               ))}

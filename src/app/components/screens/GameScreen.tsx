@@ -1,11 +1,11 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { GlassCard } from "../ui/GlassCard";
 import { GameButton } from "../ui/GameButton";
 import { GameInput } from "../ui/GameInput";
 import { PlayerAvatar } from "../ui/PlayerAvatar";
 import { CountdownTimer } from "../ui/CountdownTimer";
-import { Send, Vote, Target, MessageSquare, History, AlertCircle, Users } from "lucide-react";
+import { Send, Vote, Target, MessageSquare, History, AlertCircle, Users, LogOut } from "lucide-react";
 import type { Player, ClueEntry } from "../../types";
 import type { RoomMode } from "../../lib/protocol";
 import { useI18n } from "../../i18n/LanguageContext";
@@ -25,9 +25,11 @@ interface GameScreenProps {
   currentTurnId: string | null;
   turnOrder: string[];
   drawDeadline: number | null;
+  turnDeadline: number | null;
   onSubmitClue: (content: { text?: string; image?: string }) => void;
   onStartVote: () => void;
   onGuessWord: () => void;
+  onLeave: () => void;
 }
 
 export function GameScreen({
@@ -44,9 +46,11 @@ export function GameScreen({
   currentTurnId,
   turnOrder,
   drawDeadline,
+  turnDeadline,
   onSubmitClue,
   onStartVote,
   onGuessWord,
+  onLeave,
 }: GameScreenProps) {
   const { t } = useI18n();
   const isDrawing = mode === "drawing";
@@ -77,11 +81,31 @@ export function GameScreen({
     const i = turnOrder.indexOf(id);
     return i === -1 ? null : i + 1;
   };
-  // seconds left in a timed drawing round (memoized so broadcasts don't reset it)
-  const drawSecondsLeft = useMemo(
-    () => Math.max(0, Math.ceil(((drawDeadline ?? 0) - Date.now()) / 1000)),
-    [drawDeadline]
+  // active clock: shared draw clock (drawing) or the current player's turn clock (word)
+  const activeDeadline = isDrawing ? drawDeadline : turnDeadline;
+  const secondsLeft = useMemo(
+    () => Math.max(0, Math.ceil(((activeDeadline ?? 0) - Date.now()) / 1000)),
+    [activeDeadline]
   );
+
+  // word modes: auto-submit the typed clue when this player's turn clock expires
+  const clueRef = useRef(clue);
+  clueRef.current = clue;
+  useEffect(() => {
+    if (isDrawing || !isMyTurn || !turnDeadline || hasSubmittedThisRound) return;
+    const fire = () => {
+      const txt = clueRef.current.trim();
+      if (txt && !/\s/.test(txt)) onSubmitClue({ text: txt });
+    };
+    const ms = turnDeadline - Date.now();
+    if (ms <= 0) {
+      fire();
+      return;
+    }
+    const id = setTimeout(fire, ms);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [turnDeadline, isMyTurn, hasSubmittedThisRound, isDrawing]);
 
   return (
     <div className="min-h-screen mesh-bg flex flex-col">
@@ -93,20 +117,35 @@ export function GameScreen({
       {/* Header */}
       <header className="relative z-10 flex items-center justify-between px-4 py-4 md:px-8 border-b border-white/5">
         <div className="flex items-center gap-3">
+          <button
+            onClick={onLeave}
+            title={t("lobby.leave")}
+            className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-slate-400 hover:text-red-300 hover:border-red-500/30 hover:bg-red-500/10 transition-all flex items-center justify-center"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
           <div className={`
             px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider
             ${isImpostor ? "bg-red-500/15 text-red-400 border border-red-500/25" : "bg-blue-500/15 text-blue-300 border border-blue-500/25"}
           `}>
             {isImpostor ? t("game.impostor") : t("game.player")}
           </div>
-          <div className="h-4 w-px bg-white/10" />
-          <span className="text-xs text-slate-500">
-            {t("game.category")}: <span className="text-slate-300">{categoryLabel}</span>
-          </span>
         </div>
+
+        {/* Category — centered & bold */}
+        <div className="absolute left-1/2 -translate-x-1/2 text-center pointer-events-none">
+          <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500">{t("game.category")}</p>
+          <p
+            className="font-bold text-white leading-tight"
+            style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "1.35rem" }}
+          >
+            {categoryLabel}
+          </p>
+        </div>
+
         <div className="flex items-center gap-2">
-          {isDrawing && drawDeadline && (
-            <CountdownTimer seconds={drawSecondsLeft} variant="orange" size="sm" />
+          {activeDeadline && (
+            <CountdownTimer seconds={secondsLeft} variant="orange" size="sm" />
           )}
           <div className="px-3 py-1 rounded-lg bg-[#1E293B] border border-white/10 text-sm font-bold text-white">
             {t("game.round")} {round}

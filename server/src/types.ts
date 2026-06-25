@@ -113,6 +113,8 @@ export interface Room {
   vote: VoteState | null;
   /** drawing-mode round deadline (epoch ms); null outside a timed draw round */
   drawDeadline: number | null;
+  /** word-mode per-turn deadline (epoch ms); null outside an active turn */
+  turnDeadline: number | null;
   result: {
     eliminatedId: string | null;
     wasImpostor: boolean;
@@ -164,6 +166,8 @@ export interface PlayerView {
   turnOrder: string[];
   /** drawing-mode round deadline (epoch ms); null unless a timed draw round is live */
   drawDeadline: number | null;
+  /** word-mode per-turn deadline (epoch ms); null unless it's an active turn */
+  turnDeadline: number | null;
   /** how many impostors there are this game (revealed so crew knows the odds) */
   impostorCount: number;
   cluesThisRound: number;
@@ -205,6 +209,8 @@ export interface ClientToServerEvents {
   "room:join": (p: { code: string }, cb: (res: Ack<{ code: string }>) => void) => void;
   "room:leave": () => void;
   "room:mode": (p: { mode: RoomMode }) => void;
+  "room:maxPlayers": (p: { maxPlayers: number }) => void;
+  "room:kick": (p: { targetId: string }) => void;
   "player:ready": (p: { ready: boolean }) => void;
   "game:start": () => void;
   "reveal:ack": () => void;

@@ -49,7 +49,7 @@ export const translations: Record<Lang, Dict> = {
       modeDrawing: "Malowanie",
       modeDrawingDesc: "Rysuj wskazówki zamiast pisać",
       modeSzpont: "Szpont",
-      modeSzpontDesc: "Wielu Impostorów — chaos! Liczbę losuje gra",
+      modeSzpontDesc: "Sekretny tryb — dla innych wygląda jak klasyk, a Impostorów jest więcej (liczbę losuje gra)",
     },
     draw: {
       yourDrawing: "Twój rysunek — runda {n}",
@@ -100,6 +100,7 @@ export const translations: Record<Lang, Dict> = {
       startGame: "Rozpocznij grę",
       waitingForPlayer: "Czekam na gracza…",
       leave: "Wyjdź",
+      kick: "Wyrzuć gracza",
     },
     role: {
       hey: "Cześć",
@@ -149,6 +150,9 @@ export const translations: Record<Lang, Dict> = {
     voting: {
       title: "Czas głosowania!",
       subtitle: "Kto według Ciebie jest Impostorem?",
+      pickAnswer: "Która odpowiedź jest podejrzana?",
+      votingAnswer: "Głosujesz na odpowiedź",
+      noAnswer: "Brak odpowiedzi",
       cluesTitle: "Wskazówki w tej rundzie",
       secondsLeft: "Sekund do końca",
       voteOrSkip: "Głosuj lub pomiń",
@@ -292,7 +296,7 @@ export const translations: Record<Lang, Dict> = {
       modeDrawing: "Drawing",
       modeDrawingDesc: "Draw your clues instead of typing",
       modeSzpont: "Szpont",
-      modeSzpontDesc: "Many Impostors — chaos! Count is random",
+      modeSzpontDesc: "Secret mode — looks classic to others, but there are more Impostors (random count)",
     },
     draw: {
       yourDrawing: "Your drawing — round {n}",
@@ -343,6 +347,7 @@ export const translations: Record<Lang, Dict> = {
       startGame: "Start Game",
       waitingForPlayer: "Waiting for player…",
       leave: "Leave",
+      kick: "Remove player",
     },
     role: {
       hey: "Hey",
@@ -392,6 +397,9 @@ export const translations: Record<Lang, Dict> = {
     voting: {
       title: "Vote Time!",
       subtitle: "Who do you think is the Impostor?",
+      pickAnswer: "Which answer looks suspicious?",
+      votingAnswer: "You're voting for answer",
+      noAnswer: "No answer",
       cluesTitle: "Clues this round",
       secondsLeft: "Seconds left",
       voteOrSkip: "Vote or skip",
@@ -502,6 +510,12 @@ export const serverMessagePl: Record<string, string> = {
   "Only the host can start": "Tylko host może rozpocząć",
   "Only the host can change the mode": "Tylko host może zmienić tryb",
   "Can only change the mode in the lobby": "Tryb można zmienić tylko w lobby",
+  "Only the host can change settings": "Tylko host może zmieniać ustawienia",
+  "Can only change settings in the lobby": "Ustawienia można zmieniać tylko w lobby",
+  "Can't set below the current player count": "Nie można ustawić poniżej liczby graczy w pokoju",
+  "Only the host can remove players": "Tylko host może wyrzucać graczy",
+  "Can only remove players in the lobby": "Graczy można wyrzucać tylko w lobby",
+  "Host can't remove themselves": "Host nie może wyrzucić samego siebie",
   "Game already started": "Gra już się rozpoczęła",
   "All players must be ready": "Wszyscy gracze muszą być gotowi",
   "Not accepting clues right now": "Teraz nie można wysyłać wskazówek",
