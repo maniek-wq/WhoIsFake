@@ -230,15 +230,21 @@ export function GameScreen({
               : "bg-blue-500/8 border-blue-500/20 text-blue-300"
           }`}>
             {isImpostor ? (
-              <>
-                <p className="font-semibold mb-1">{isObraz ? t("game.category") : t("game.yourHint")}</p>
-                <p className="text-red-200/70">{isObraz ? categoryLabel : hint}</p>
-              </>
+              isObraz ? (
+                <p className="font-semibold text-red-200/90">{t("role.noHint")}</p>
+              ) : (
+                <>
+                  <p className="font-semibold mb-1">{t("game.yourHint")}</p>
+                  <p className="text-red-200/70">{hint}</p>
+                </>
+              )
+            ) : isObraz ? (
+              <p className="font-semibold text-blue-200/90">{t("game.imageReminder")}</p>
             ) : (
               <>
-                <p className="font-semibold mb-1">{isObraz ? t("game.category") : t("game.secretWord")}</p>
+                <p className="font-semibold mb-1">{t("game.secretWord")}</p>
                 <p className="text-blue-200/80 tracking-wider font-bold" style={{ fontFamily: "Rajdhani, sans-serif" }}>
-                  {isObraz ? categoryLabel : secretWord}
+                  {secretWord}
                 </p>
               </>
             )}

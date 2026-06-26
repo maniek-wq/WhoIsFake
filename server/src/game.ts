@@ -458,12 +458,12 @@ export class GameEngine {
       room.hint = null;
     } else if (room.mode === "obraz") {
       // The crew sees a painting and describes it in one word; the impostor never
-      // sees it and only learns the genre (category) as a thin hint to blend in.
-      const { url, category } = pickRandomImage();
+      // sees it and gets no hint at all — they must blend in purely from the clues.
+      const { url } = pickRandomImage();
       room.secretWord = null;
       room.impostorWord = null;
       room.imageUrl = url;
-      room.category = category;
+      room.category = null;
       room.hint = null;
     } else {
       const { word, category, hint } = pickRandomWord();

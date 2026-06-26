@@ -136,7 +136,8 @@ export const translations: Record<Lang, Dict> = {
       undercoverDesc: "Wszyscy dostają słowo — ale jedna osoba ma inne, łudząco podobne. Dawaj wskazówki i wykryj odmieńca (albo wtop się, jeśli to Ty).",
       obrazTitle: "Opisz\nobraz",
       obrazDesc: "Zobacz obraz i opisuj go jednym słowem. Impostor go nie widzi — wykryjcie go, zanim się wtopi.",
-      obrazImpostorDesc: "Nie widzisz obrazu. Znasz tylko jego gatunek — wtop się wskazówkami i nie daj się złapać!",
+      obrazImpostorDesc: "Nie widzisz obrazu i nie masz żadnej podpowiedzi — wtop się wskazówkami i nie daj się złapać!",
+      noHint: "Brak podpowiedzi — wtop się!",
       yourImage: "Twój obraz",
     },
     game: {
@@ -166,6 +167,7 @@ export const translations: Record<Lang, Dict> = {
       givingClue: "Daje wskazówkę…",
       turnOf: "Tura gracza {name}",
       turnWait: "Poczekaj na swoją kolej — obserwuj wskazówki.",
+      imageReminder: "Opisz obraz jednym słowem",
     },
     voting: {
       title: "Czas głosowania!",
@@ -412,7 +414,8 @@ export const translations: Record<Lang, Dict> = {
       undercoverDesc: "Everyone gets a word — but one person has a different, very similar one. Give clues and spot the odd one out (or blend in, if it's you).",
       obrazTitle: "Describe\nthe Image",
       obrazDesc: "Look at the painting and describe it in one word. The impostor can't see it — catch them before they blend in.",
-      obrazImpostorDesc: "You can't see the image. You only know its genre — blend in with your clues and don't get caught!",
+      obrazImpostorDesc: "You can't see the image and you get no hint at all — blend in with your clues and don't get caught!",
+      noHint: "No hint — blend in!",
       yourImage: "Your image",
     },
     game: {
@@ -442,6 +445,7 @@ export const translations: Record<Lang, Dict> = {
       givingClue: "Giving a clue…",
       turnOf: "{name}'s turn",
       turnWait: "Wait for your turn — watch the clues.",
+      imageReminder: "Describe the painting in one word",
     },
     voting: {
       title: "Vote Time!",
