@@ -4,12 +4,14 @@ import { GameButton } from "../ui/GameButton";
 import { Eye, EyeOff, AlertTriangle, BookOpen, ChevronRight } from "lucide-react";
 import { useI18n } from "../../i18n/LanguageContext";
 import type { RoomMode } from "../../lib/protocol";
+import { ImageWithFallback } from "../figma/ImageWithFallback";
 
 interface RoleRevealScreenProps {
   isImpostor: boolean;
   secretWord?: string;
   category?: string;
   hint?: string;
+  imageUrl?: string | null;
   playerName: string;
   impostorCount?: number;
   mode?: RoomMode;
@@ -21,6 +23,7 @@ export function RoleRevealScreen({
   secretWord,
   category,
   hint,
+  imageUrl,
   playerName,
   impostorCount = 1,
   mode = "classic",
@@ -28,6 +31,7 @@ export function RoleRevealScreen({
 }: RoleRevealScreenProps) {
   const { t } = useI18n();
   const isUndercover = mode === "undercover";
+  const isObraz = mode === "obraz";
   const categoryLabel = category ? t(`category.${category}`) : "";
   const [revealed, setRevealed] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
@@ -118,20 +122,20 @@ export function RoleRevealScreen({
                         {t("role.youImpostor")}
                       </h2>
                       <p className="text-slate-500 text-sm max-w-xs mx-auto leading-relaxed">
-                        {t("role.impostorDesc")}
+                        {isObraz ? t("role.obrazImpostorDesc") : t("role.impostorDesc")}
                       </p>
                     </>
                   ) : (
                     <>
-                      <div className="text-7xl mb-4">{isUndercover ? "🎭" : "🕵️"}</div>
+                      <div className="text-7xl mb-4">{isObraz ? "🖼️" : isUndercover ? "🎭" : "🕵️"}</div>
                       <h2
                         className="text-blue-300 leading-tight mb-2 whitespace-pre-line"
                         style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "2.2rem", fontWeight: 700 }}
                       >
-                        {isUndercover ? t("role.undercoverTitle") : t("role.youKnow")}
+                        {isObraz ? t("role.obrazTitle") : isUndercover ? t("role.undercoverTitle") : t("role.youKnow")}
                       </h2>
                       <p className="text-slate-500 text-sm max-w-xs mx-auto leading-relaxed">
-                        {isUndercover ? t("role.undercoverDesc") : t("role.playerDesc")}
+                        {isObraz ? t("role.obrazDesc") : isUndercover ? t("role.undercoverDesc") : t("role.playerDesc")}
                       </p>
                     </>
                   )}
@@ -164,10 +168,12 @@ export function RoleRevealScreen({
                     <div>
                       <p className="text-xs font-semibold text-red-400/70 uppercase tracking-wider mb-1">{t("role.categoryHint")}</p>
                       <p className="text-xl font-bold text-red-300">{categoryLabel}</p>
-                      <div className="mt-3 pt-3 border-t border-red-500/15">
-                        <p className="text-xs font-semibold text-red-400/70 uppercase tracking-wider mb-1">{t("role.yourHint")}</p>
-                        <p className="text-sm text-red-200/80 leading-relaxed">{hint}</p>
-                      </div>
+                      {hint && (
+                        <div className="mt-3 pt-3 border-t border-red-500/15">
+                          <p className="text-xs font-semibold text-red-400/70 uppercase tracking-wider mb-1">{t("role.yourHint")}</p>
+                          <p className="text-sm text-red-200/80 leading-relaxed">{hint}</p>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div>
@@ -178,13 +184,26 @@ export function RoleRevealScreen({
                         </>
                       )}
                       <div className={categoryLabel ? "mt-3 pt-3 border-t border-blue-500/15" : ""}>
-                        <p className="text-xs font-semibold text-blue-400/70 uppercase tracking-wider mb-2">{t("role.secretWord")}</p>
-                        <p
-                          className="text-blue-300 font-bold tracking-widest"
-                          style={{ fontSize: "2rem", fontFamily: "Rajdhani, sans-serif" }}
-                        >
-                          {secretWord}
-                        </p>
+                        {isObraz && imageUrl ? (
+                          <>
+                            <p className="text-xs font-semibold text-blue-400/70 uppercase tracking-wider mb-2">{t("role.yourImage")}</p>
+                            <ImageWithFallback
+                              src={imageUrl}
+                              alt=""
+                              className="w-full rounded-xl border border-blue-500/20 bg-black/20 max-h-72 object-contain"
+                            />
+                          </>
+                        ) : (
+                          <>
+                            <p className="text-xs font-semibold text-blue-400/70 uppercase tracking-wider mb-2">{t("role.secretWord")}</p>
+                            <p
+                              className="text-blue-300 font-bold tracking-widest"
+                              style={{ fontSize: "2rem", fontFamily: "Rajdhani, sans-serif" }}
+                            >
+                              {secretWord}
+                            </p>
+                          </>
+                        )}
                       </div>
                     </div>
                   )}

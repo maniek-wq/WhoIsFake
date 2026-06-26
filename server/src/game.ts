@@ -1,5 +1,6 @@
 import { customAlphabet } from "nanoid";
 import { pickRandomWord, pickRandomPair } from "./words.js";
+import { pickRandomImage } from "./images.js";
 import type { Store } from "./store.js";
 import type { Clue, PlayerView, Room, RoomMode, RoomPlayer, User } from "./types.js";
 
@@ -254,6 +255,7 @@ export class GameEngine {
       secretWord: null,
       hint: null,
       impostorWord: null,
+      imageUrl: null,
       impostorIds: [],
       guessedBy: null,
       clues: [],
@@ -403,7 +405,11 @@ export class GameEngine {
   }
 
   private normalizeMode(mode: RoomMode): RoomMode {
-    return mode === "drawing" || mode === "szpont" || mode === "collab" || mode === "undercover"
+    return mode === "drawing" ||
+      mode === "szpont" ||
+      mode === "collab" ||
+      mode === "undercover" ||
+      mode === "obraz"
       ? mode
       : "classic";
   }
@@ -447,12 +453,23 @@ export class GameEngine {
       const { crewWord, undercoverWord } = pickRandomPair();
       room.secretWord = crewWord;
       room.impostorWord = undercoverWord;
+      room.imageUrl = null;
       room.category = null;
+      room.hint = null;
+    } else if (room.mode === "obraz") {
+      // The crew sees a painting and describes it in one word; the impostor never
+      // sees it and only learns the genre (category) as a thin hint to blend in.
+      const { url, category } = pickRandomImage();
+      room.secretWord = null;
+      room.impostorWord = null;
+      room.imageUrl = url;
+      room.category = category;
       room.hint = null;
     } else {
       const { word, category, hint } = pickRandomWord();
       room.secretWord = word;
       room.impostorWord = null;
+      room.imageUrl = null;
       room.category = category;
       room.hint = hint;
     }
@@ -671,7 +688,8 @@ export class GameEngine {
 
   impostorGuess(userId: string, guess: string): boolean {
     const room = this.requireRoom(userId);
-    if (room.mode === "undercover") throw new GameError("No guessing in this mode");
+    if (room.mode === "undercover" || room.mode === "obraz")
+      throw new GameError("No guessing in this mode");
     const p = this.player(room, userId);
     if (!p.isImpostor) throw new GameError("Only the Impostor can guess");
     if (room.status !== "playing" && room.status !== "results")
@@ -725,6 +743,7 @@ export class GameEngine {
     room.secretWord = null;
     room.hint = null;
     room.impostorWord = null;
+    room.imageUrl = null;
     room.impostorIds = [];
     room.guessedBy = null;
     room.clues = [];
@@ -935,6 +954,8 @@ export class GameEngine {
           ? null
           : room.secretWord,
       impostorWord: ended && room.mode === "undercover" ? room.impostorWord : null,
+      imageUrl:
+        room.mode === "obraz" && (ended || !actualYouImpostor) ? room.imageUrl : null,
       hint: room.mode === "undercover" ? null : actualYouImpostor ? room.hint : null,
       clueHistory: revealedClues,
       canvas: room.mode === "collab" ? room.canvas : null,

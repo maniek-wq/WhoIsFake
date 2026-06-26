@@ -3,7 +3,7 @@
 
 export type RoomStatus = "lobby" | "reveal" | "playing" | "voting" | "results" | "ended";
 export type WinReason = "guessed" | "onevsone" | "eliminated";
-export type RoomMode = "classic" | "drawing" | "szpont" | "collab" | "undercover";
+export type RoomMode = "classic" | "drawing" | "szpont" | "collab" | "undercover" | "obraz";
 
 export interface PublicUser {
   id: string;
@@ -74,6 +74,7 @@ export interface PlayerView {
   category: string | null;
   secretWord: string | null;
   impostorWord: string | null;
+  imageUrl: string | null;
   hint: string | null;
   clueHistory: Clue[];
   canvas: string | null;

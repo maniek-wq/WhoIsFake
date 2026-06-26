@@ -10,6 +10,7 @@ import type { Player, ClueEntry } from "../../types";
 import type { RoomMode } from "../../lib/protocol";
 import { useI18n } from "../../i18n/LanguageContext";
 import { DrawingCanvas } from "../ui/DrawingCanvas";
+import { ImageWithFallback } from "../figma/ImageWithFallback";
 
 interface GameScreenProps {
   round: number;
@@ -20,6 +21,7 @@ interface GameScreenProps {
   secretWord?: string;
   category: string;
   hint?: string;
+  imageUrl?: string | null;
   clueHistory: ClueEntry[];
   canvas: string | null;
   hasSubmittedThisRound: boolean;
@@ -42,6 +44,7 @@ export function GameScreen({
   secretWord,
   category,
   hint,
+  imageUrl,
   clueHistory,
   canvas,
   hasSubmittedThisRound,
@@ -57,6 +60,9 @@ export function GameScreen({
   const { t } = useI18n();
   const isDrawing = mode === "drawing";
   const isCollab = mode === "collab";
+  const isObraz = mode === "obraz";
+  // obraz: the crew keeps the reference painting in view while giving clues
+  const showImage = isObraz && !isImpostor && Boolean(imageUrl);
   const categoryLabel = category ? t(`category.${category}`) : "";
   const [clue, setClue] = useState("");
   const [activeTab, setActiveTab] = useState<"clues" | "players">("clues");
@@ -225,14 +231,14 @@ export function GameScreen({
           }`}>
             {isImpostor ? (
               <>
-                <p className="font-semibold mb-1">{t("game.yourHint")}</p>
-                <p className="text-red-200/70">{hint}</p>
+                <p className="font-semibold mb-1">{isObraz ? t("game.category") : t("game.yourHint")}</p>
+                <p className="text-red-200/70">{isObraz ? categoryLabel : hint}</p>
               </>
             ) : (
               <>
-                <p className="font-semibold mb-1">{t("game.secretWord")}</p>
+                <p className="font-semibold mb-1">{isObraz ? t("game.category") : t("game.secretWord")}</p>
                 <p className="text-blue-200/80 tracking-wider font-bold" style={{ fontFamily: "Rajdhani, sans-serif" }}>
-                  {secretWord}
+                  {isObraz ? categoryLabel : secretWord}
                 </p>
               </>
             )}
@@ -257,6 +263,21 @@ export function GameScreen({
               </button>
             ))}
           </div>
+
+          {/* Obraz: the crew's reference painting, kept in view while giving clues */}
+          {showImage && (
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <MessageSquare className="w-4 h-4 text-blue-400" />
+                <h3 className="text-white text-sm font-semibold">{t("role.yourImage")}</h3>
+              </div>
+              <ImageWithFallback
+                src={imageUrl!}
+                alt=""
+                className="w-full max-w-xl mx-auto rounded-xl border border-white/10 bg-black/20 max-h-[420px] object-contain"
+              />
+            </div>
+          )}
 
           {/* Collab: shared cumulative drawing */}
           {isCollab && !isEditingCollab && (
@@ -454,7 +475,7 @@ export function GameScreen({
               >
                 {t("game.startVote")}
               </GameButton>
-              {isImpostor && (
+              {isImpostor && !isObraz && (
                 <GameButton
                   variant="orange"
                   size="md"

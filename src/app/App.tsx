@@ -200,6 +200,7 @@ export default function App() {
             playerName={youName}
             impostorCount={view.impostorCount}
             mode={view.mode}
+            imageUrl={view.imageUrl}
             onReady={() => emit("reveal:ack")}
           />
         )}
@@ -215,6 +216,7 @@ export default function App() {
             secretWord={view.secretWord ?? ""}
             category={view.category ?? ""}
             hint={view.hint ?? ""}
+            imageUrl={view.imageUrl}
             clueHistory={view.clueHistory}
             canvas={view.canvas}
             hasSubmittedThisRound={view.you.hasSubmittedThisRound}
@@ -290,6 +292,7 @@ export default function App() {
             guesserName={view.end.guesserName}
             secretWord={view.secretWord ?? ""}
             impostorWord={view.impostorWord}
+            imageUrl={view.imageUrl}
             players={players}
             winReason={view.end.winReason}
             onPlayAgain={() => emit("game:again")}

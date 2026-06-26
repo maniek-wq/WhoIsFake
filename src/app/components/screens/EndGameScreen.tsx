@@ -7,6 +7,7 @@ import { RotateCcw, Home, Trophy } from "lucide-react";
 import canvasConfetti from "canvas-confetti";
 import type { Player } from "../../types";
 import { useI18n } from "../../i18n/LanguageContext";
+import { ImageWithFallback } from "../figma/ImageWithFallback";
 
 interface EndGameScreenProps {
   impostorWon: boolean;
@@ -15,6 +16,8 @@ interface EndGameScreenProps {
   secretWord: string;
   /** undercover mode: the variant word the undercover player(s) held */
   impostorWord?: string | null;
+  /** obraz mode: the image that was shown to the crew */
+  imageUrl?: string | null;
   players: Player[];
   winReason: "guessed" | "onevsone" | "eliminated";
   onPlayAgain: () => void;
@@ -27,6 +30,7 @@ export function EndGameScreen({
   guesserName,
   secretWord,
   impostorWord,
+  imageUrl,
   players,
   winReason,
   onPlayAgain,
@@ -145,7 +149,16 @@ export function EndGameScreen({
           transition={{ delay: 0.5 }}
         >
           <GlassCard className="p-5 mb-4 border-white/10">
-            {impostorWord ? (
+            {imageUrl ? (
+              <>
+                <p className="text-xs text-slate-500 uppercase tracking-wider mb-3">{t("end.imageWas")}</p>
+                <ImageWithFallback
+                  src={imageUrl}
+                  alt=""
+                  className="w-full max-w-md mx-auto rounded-xl border border-white/10 bg-black/20 max-h-80 object-contain"
+                />
+              </>
+            ) : impostorWord ? (
               <div className="flex items-stretch justify-center gap-4">
                 <div className="flex-1">
                   <p className="text-xs text-blue-400/80 uppercase tracking-wider mb-2">{t("end.crewWord")}</p>

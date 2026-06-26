@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { GlassCard } from "../ui/GlassCard";
 import { GameButton } from "../ui/GameButton";
 import { PlayerAvatar } from "../ui/PlayerAvatar";
-import { Copy, Check, Crown, Users, Wifi, ChevronRight, LogOut, Type, Palette, Ghost, Brush, VenetianMask, Minus, Plus, X } from "lucide-react";
+import { Copy, Check, Crown, Users, Wifi, ChevronRight, LogOut, Type, Palette, Ghost, Brush, VenetianMask, Image as ImageIcon, Minus, Plus, X } from "lucide-react";
 import type { Player } from "../../types";
 import type { RoomMode } from "../../lib/protocol";
 import { useI18n } from "../../i18n/LanguageContext";
@@ -118,6 +118,7 @@ export function LobbyScreen({
                   { id: "drawing", icon: Palette, label: t("create.modeDrawing") },
                   { id: "collab", icon: Brush, label: t("create.modeCollab") },
                   { id: "undercover", icon: VenetianMask, label: t("create.modeUndercover") },
+                  { id: "obraz", icon: ImageIcon, label: t("create.modeObraz") },
                   { id: "szpont", icon: Ghost, label: t("create.modeSzpont") },
                 ];
                 if (!isHost) {
