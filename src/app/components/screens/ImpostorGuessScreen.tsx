@@ -13,9 +13,8 @@ interface ImpostorGuessScreenProps {
   onCancel: () => void;
 }
 
-export function ImpostorGuessScreen({ hint, category, onGuess, onCancel }: ImpostorGuessScreenProps) {
+export function ImpostorGuessScreen({ hint, onGuess, onCancel }: ImpostorGuessScreenProps) {
   const { t } = useI18n();
-  const categoryLabel = category ? t(`category.${category}`) : "";
   const [guess, setGuess] = useState("");
 
   return (
@@ -57,16 +56,10 @@ export function ImpostorGuessScreen({ hint, category, onGuess, onCancel }: Impos
         </div>
 
         <GlassCard glow="orange" className="p-6 space-y-5">
-          {/* Info */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="p-3 rounded-xl bg-[#1E293B]/80 border border-white/8 text-center">
-              <p className="text-xs text-slate-500 mb-1 uppercase tracking-wider">{t("guess.category")}</p>
-              <p className="font-semibold text-slate-200">{categoryLabel}</p>
-            </div>
-            <div className="p-3 rounded-xl bg-orange-500/8 border border-orange-500/20 text-center">
-              <p className="text-xs text-orange-400/70 mb-1 uppercase tracking-wider">{t("guess.yourHint")}</p>
-              <p className="font-semibold text-orange-200">{hint}</p>
-            </div>
+          {/* Info — the impostor's one-word hint (no category leak) */}
+          <div className="p-3 rounded-xl bg-orange-500/8 border border-orange-500/20 text-center">
+            <p className="text-xs text-orange-400/70 mb-1 uppercase tracking-wider">{t("guess.yourHint")}</p>
+            <p className="font-semibold text-orange-200">{hint}</p>
           </div>
 
           <div className="p-3 rounded-xl bg-red-500/8 border border-red-500/20">

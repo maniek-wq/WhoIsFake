@@ -165,20 +165,14 @@ export function RoleRevealScreen({
                   )}
 
                   {isImpostor ? (
-                    isObraz ? (
-                      <div className="text-center py-3">
-                        <p className="text-base font-bold text-red-300">{t("role.noHint")}</p>
+                    hint ? (
+                      <div>
+                        <p className="text-xs font-semibold text-red-400/70 uppercase tracking-wider mb-1">{t("role.yourHint")}</p>
+                        <p className="text-2xl font-bold text-red-300">{hint}</p>
                       </div>
                     ) : (
-                      <div>
-                        <p className="text-xs font-semibold text-red-400/70 uppercase tracking-wider mb-1">{t("role.categoryHint")}</p>
-                        <p className="text-xl font-bold text-red-300">{categoryLabel}</p>
-                        {hint && (
-                          <div className="mt-3 pt-3 border-t border-red-500/15">
-                            <p className="text-xs font-semibold text-red-400/70 uppercase tracking-wider mb-1">{t("role.yourHint")}</p>
-                            <p className="text-sm text-red-200/80 leading-relaxed">{hint}</p>
-                          </div>
-                        )}
+                      <div className="text-center py-3">
+                        <p className="text-base font-bold text-red-300">{t("role.noHint")}</p>
                       </div>
                     )
                   ) : (

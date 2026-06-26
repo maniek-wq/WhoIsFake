@@ -143,8 +143,8 @@ export function GameScreen({
           </div>
         </div>
 
-        {/* Category — centered & bold (undercover has no category) */}
-        {categoryLabel && (
+        {/* Category — centered & bold; hidden from the impostor (it's a leak) */}
+        {categoryLabel && !isImpostor && (
           <div className="absolute left-1/2 -translate-x-1/2 text-center pointer-events-none">
             <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500">{t("game.category")}</p>
             <p
