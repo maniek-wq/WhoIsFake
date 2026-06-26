@@ -1,7 +1,7 @@
 import { motion } from "motion/react";
 import { GlassCard } from "../ui/GlassCard";
 import { GameButton } from "../ui/GameButton";
-import { Shield, Users, Eye, Zap, ChevronRight } from "lucide-react";
+import { Shield, Users, Eye, Zap, ChevronRight, Type, Palette, Brush, VenetianMask, Image as ImageIcon, Ghost } from "lucide-react";
 import { useI18n } from "../../i18n/LanguageContext";
 
 interface LandingScreenProps {
@@ -14,6 +14,16 @@ const STEPS = [
   { key: "roles", icon: <Eye className="w-5 h-5" />, color: "text-cyan-400", bg: "bg-cyan-500/10 border-cyan-500/20" },
   { key: "clues", icon: <Zap className="w-5 h-5" />, color: "text-orange-400", bg: "bg-orange-500/10 border-orange-500/20" },
   { key: "vote", icon: <Shield className="w-5 h-5" />, color: "text-red-400", bg: "bg-red-500/10 border-red-500/20" },
+] as const;
+
+// Each mode shows what you actually do — labels/descriptions reuse the create-room keys.
+const MODES = [
+  { key: "Classic", icon: Type, color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/20" },
+  { key: "Obraz", icon: ImageIcon, color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20" },
+  { key: "Undercover", icon: VenetianMask, color: "text-purple-400", bg: "bg-purple-500/10 border-purple-500/20" },
+  { key: "Drawing", icon: Palette, color: "text-cyan-400", bg: "bg-cyan-500/10 border-cyan-500/20" },
+  { key: "Collab", icon: Brush, color: "text-orange-400", bg: "bg-orange-500/10 border-orange-500/20" },
+  { key: "Szpont", icon: Ghost, color: "text-red-400", bg: "bg-red-500/10 border-red-500/20" },
 ] as const;
 
 export function LandingScreen({ onCreateGame, onJoinGame }: LandingScreenProps) {
@@ -158,6 +168,47 @@ export function LandingScreen({ onCreateGame, onJoinGame }: LandingScreenProps) 
               </GlassCard>
             </motion.div>
           ))}
+        </div>
+      </section>
+
+      {/* Game Modes */}
+      <section className="relative z-10 px-6 pb-20 md:px-12 max-w-5xl mx-auto w-full">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="text-center mb-10"
+        >
+          <h2 className="text-white mb-2" style={{ fontFamily: "Rajdhani, sans-serif", fontWeight: 700, fontSize: "2rem" }}>
+            {t("landing.modes")}
+          </h2>
+          <p className="text-slate-500 text-sm">{t("landing.modesSub")}</p>
+        </motion.div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {MODES.map((m, i) => {
+            const Icon = m.icon;
+            return (
+              <motion.div
+                key={m.key}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.06, duration: 0.4 }}
+              >
+                <GlassCard className={`p-5 border ${m.bg} h-full`}>
+                  <div className={`w-10 h-10 rounded-xl ${m.bg} border flex items-center justify-center mb-3 ${m.color}`}>
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <h3 className="text-white mb-1.5" style={{ fontSize: "1rem", fontWeight: 600 }}>
+                    {t(`create.mode${m.key}`)}
+                  </h3>
+                  <p className="text-slate-500 text-sm leading-relaxed">{t(`create.mode${m.key}Desc`)}</p>
+                </GlassCard>
+              </motion.div>
+            );
+          })}
         </div>
       </section>
 

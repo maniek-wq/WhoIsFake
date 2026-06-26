@@ -19,6 +19,8 @@ export const translations: Record<Lang, Dict> = {
       howTo: "Jak grać",
       howToSub: "Opanuj sztukę dedukcji w 4 krokach",
       step: "Krok",
+      modes: "Tryby gry",
+      modesSub: "Host wybiera tryb przy tworzeniu pokoju",
       steps: {
         gather: { title: "Zbierz graczy", desc: "3–5 graczy dołącza do pokoju. Jeden losowy gracz zostaje potajemnie Impostorem." },
         roles: { title: "Tajne role", desc: "Zwykli gracze znają tajne hasło. Impostor dostaje tylko jednowyrazową podpowiedź." },
@@ -297,6 +299,8 @@ export const translations: Record<Lang, Dict> = {
       howTo: "How to Play",
       howToSub: "Master the art of deception in 4 steps",
       step: "Step",
+      modes: "Game Modes",
+      modesSub: "The host picks a mode when creating a room",
       steps: {
         gather: { title: "Gather Players", desc: "3–5 players join a room. One random player secretly becomes the Impostor." },
         roles: { title: "Secret Roles", desc: "Normal players know the secret word. The Impostor only gets a one-word hint." },
