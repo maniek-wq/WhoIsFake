@@ -31,13 +31,16 @@ interface DrawingCanvasProps {
   onSubmit: (dataUrl: string) => void;
   /** epoch ms; when reached, the current canvas auto-submits (timed round) */
   deadline?: number | null;
+  /** collab mode: a data-URL to start from (continue an existing picture) */
+  baseImage?: string | null;
 }
 
-export function DrawingCanvas({ onSubmit, deadline }: DrawingCanvasProps) {
+export function DrawingCanvas({ onSubmit, deadline, baseImage }: DrawingCanvasProps) {
   const { t } = useI18n();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const itemsRef = useRef<Item[]>([]);
   const currentRef = useRef<Item | null>(null);
+  const baseImgRef = useRef<HTMLImageElement | null>(null);
   const drawingRef = useRef(false);
   const [, force] = useReducer((x) => x + 1, 0);
 
@@ -98,6 +101,7 @@ export function DrawingCanvas({ onSubmit, deadline }: DrawingCanvasProps) {
     if (!ctx) return;
     ctx.fillStyle = BG;
     ctx.fillRect(0, 0, W, H);
+    if (baseImgRef.current) ctx.drawImage(baseImgRef.current, 0, 0, W, H);
     for (const item of itemsRef.current) drawItem(ctx, item);
     if (currentRef.current) drawItem(ctx, currentRef.current);
   };
@@ -106,6 +110,22 @@ export function DrawingCanvas({ onSubmit, deadline }: DrawingCanvasProps) {
     redraw();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // collab: load the shared picture as the starting point to continue on
+  useEffect(() => {
+    if (!baseImage) {
+      baseImgRef.current = null;
+      redraw();
+      return;
+    }
+    const img = new Image();
+    img.onload = () => {
+      baseImgRef.current = img;
+      redraw();
+    };
+    img.src = baseImage;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [baseImage]);
 
   const pointFromEvent = (e: React.PointerEvent<HTMLCanvasElement>): Point => {
     const rect = canvasRef.current!.getBoundingClientRect();

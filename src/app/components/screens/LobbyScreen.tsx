@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { GlassCard } from "../ui/GlassCard";
 import { GameButton } from "../ui/GameButton";
 import { PlayerAvatar } from "../ui/PlayerAvatar";
-import { Copy, Check, Crown, Users, Wifi, ChevronRight, LogOut, Type, Palette, Ghost, Minus, Plus, X } from "lucide-react";
+import { Copy, Check, Crown, Users, Wifi, ChevronRight, LogOut, Type, Palette, Ghost, Brush, Minus, Plus, X } from "lucide-react";
 import type { Player } from "../../types";
 import type { RoomMode } from "../../lib/protocol";
 import { useI18n } from "../../i18n/LanguageContext";
@@ -116,6 +116,7 @@ export function LobbyScreen({
                 const MODES: { id: RoomMode; icon: typeof Type; label: string }[] = [
                   { id: "classic", icon: Type, label: t("create.modeClassic") },
                   { id: "drawing", icon: Palette, label: t("create.modeDrawing") },
+                  { id: "collab", icon: Brush, label: t("create.modeCollab") },
                   { id: "szpont", icon: Ghost, label: t("create.modeSzpont") },
                 ];
                 if (!isHost) {
@@ -129,7 +130,7 @@ export function LobbyScreen({
                   );
                 }
                 return (
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 gap-2">
                     {MODES.map((m) => {
                       const Icon = m.icon;
                       return (

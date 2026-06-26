@@ -9,6 +9,7 @@ const VOTE_SECONDS = 30;
 const DRAW_SECONDS = 60; // drawing-mode round timer (everyone draws at once)
 const DRAW_GRACE_MS = 2000; // grace so clients' real drawings beat the server cutoff
 const CLUE_SECONDS = 30; // word-mode per-turn timer (classic & szpont)
+const COLLAB_SECONDS = 45; // collab mode per-turn drawing timer
 const TURN_GRACE_MS = 2000; // grace so a player's typed clue beats the server cutoff
 const ROOM_TTL_MS = 1000 * 60 * 60 * 2; // abandoned-room sweep window
 const MAX_IMAGE_CHARS = 700_000; // ~500KB data-URL cap for drawing clues
@@ -141,6 +142,7 @@ export class GameEngine {
   private beginRound(room: Room): void {
     this.clearDrawTimer(room.code);
     this.clearTurnTimer(room.code);
+    room.canvas = null; // collab: each round starts a fresh shared picture
     const ids = this.alivePlayers(room).map((p) => p.id);
     for (let i = ids.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -172,8 +174,9 @@ export class GameEngine {
       room.turnDeadline = null;
       return;
     }
-    room.turnDeadline = Date.now() + CLUE_SECONDS * 1000;
-    const timer = setTimeout(() => this.endTurn(room.code), CLUE_SECONDS * 1000 + TURN_GRACE_MS);
+    const secs = room.mode === "collab" ? COLLAB_SECONDS : CLUE_SECONDS;
+    room.turnDeadline = Date.now() + secs * 1000;
+    const timer = setTimeout(() => this.endTurn(room.code), secs * 1000 + TURN_GRACE_MS);
     timer.unref?.();
     this.turnTimers.set(room.code, timer);
   }
@@ -240,6 +243,7 @@ export class GameEngine {
       impostorIds: [],
       guessedBy: null,
       clues: [],
+      canvas: null,
       turnOrder: [],
       revealAck: [],
       vote: null,
@@ -347,7 +351,7 @@ export class GameEngine {
   }
 
   private normalizeMode(mode: RoomMode): RoomMode {
-    return mode === "drawing" ? "drawing" : mode === "szpont" ? "szpont" : "classic";
+    return mode === "drawing" || mode === "szpont" || mode === "collab" ? mode : "classic";
   }
 
   setMaxPlayers(userId: string, maxPlayers: number): void {
@@ -390,6 +394,7 @@ export class GameEngine {
     room.impostorIds = impostorIds;
     room.guessedBy = null;
     room.clues = [];
+    room.canvas = null;
     room.turnOrder = [];
     room.revealAck = [];
     room.vote = null;
@@ -439,6 +444,13 @@ export class GameEngine {
       if (!image.startsWith("data:image/")) throw new GameError("Draw something first");
       if (image.length > MAX_IMAGE_CHARS) throw new GameError("Drawing is too large");
       clue.image = image;
+    } else if (room.mode === "collab") {
+      // collaborative drawing: the player submits the whole shared canvas so far
+      // (base + their additions). We keep it once on the room, not per player.
+      const image = payload.image ?? "";
+      if (!image.startsWith("data:image/")) throw new GameError("Draw something first");
+      if (image.length > MAX_IMAGE_CHARS) throw new GameError("Drawing is too large");
+      room.canvas = image;
     } else {
       const clean = (payload.text ?? "").trim().slice(0, 40);
       if (!clean) throw new GameError("Clue can't be empty");
@@ -638,6 +650,7 @@ export class GameEngine {
     room.impostorIds = [];
     room.guessedBy = null;
     room.clues = [];
+    room.canvas = null;
     room.turnOrder = [];
     room.revealAck = [];
     room.vote = null;
@@ -829,6 +842,7 @@ export class GameEngine {
       secretWord: ended ? room.secretWord : youImpostor ? null : room.secretWord,
       hint: youImpostor ? room.hint : null,
       clueHistory: revealedClues,
+      canvas: room.mode === "collab" ? room.canvas : null,
       currentTurnId,
       turnOrder: room.turnOrder,
       drawDeadline: room.status === "playing" ? room.drawDeadline : null,

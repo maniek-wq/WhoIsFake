@@ -21,6 +21,7 @@ interface GameScreenProps {
   category: string;
   hint?: string;
   clueHistory: ClueEntry[];
+  canvas: string | null;
   hasSubmittedThisRound: boolean;
   currentTurnId: string | null;
   turnOrder: string[];
@@ -42,6 +43,7 @@ export function GameScreen({
   category,
   hint,
   clueHistory,
+  canvas,
   hasSubmittedThisRound,
   currentTurnId,
   turnOrder,
@@ -54,6 +56,7 @@ export function GameScreen({
 }: GameScreenProps) {
   const { t } = useI18n();
   const isDrawing = mode === "drawing";
+  const isCollab = mode === "collab";
   const categoryLabel = category ? t(`category.${category}`) : "";
   const [clue, setClue] = useState("");
   const [activeTab, setActiveTab] = useState<"clues" | "players">("clues");
@@ -76,6 +79,8 @@ export function GameScreen({
   const canStartVote = allSubmitted && !me?.isEliminated;
   // Drawing mode is simultaneous — everyone may draw at once (no turns).
   const isMyTurn = isDrawing || currentTurnId === currentPlayerId;
+  // collab: you're actively adding to the shared picture right now
+  const isEditingCollab = isCollab && isMyTurn && !hasSubmittedThisRound;
   const currentTurnPlayer = players.find((p) => p.id === currentTurnId);
   const turnPosition = (id: string) => {
     const i = turnOrder.indexOf(id);
@@ -251,7 +256,25 @@ export function GameScreen({
             ))}
           </div>
 
-          {/* Round clues */}
+          {/* Collab: shared cumulative drawing */}
+          {isCollab && !isEditingCollab && (
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <MessageSquare className="w-4 h-4 text-blue-400" />
+                <h3 className="text-white text-sm font-semibold">{t("collab.shared", { n: round })}</h3>
+              </div>
+              {canvas ? (
+                <img src={canvas} alt="" className="w-full max-w-xl mx-auto rounded-xl border border-white/10 bg-white" />
+              ) : (
+                <GlassCard className="p-8 text-center border-dashed border-white/8">
+                  <p className="text-slate-600 text-sm">{t("collab.empty")}</p>
+                </GlassCard>
+              )}
+            </div>
+          )}
+
+          {/* Round clues (per-player) — not used in collab */}
+          {!isCollab && (
           <div>
             <div className="flex items-center gap-2 mb-3">
               <MessageSquare className="w-4 h-4 text-blue-400" />
@@ -301,9 +324,10 @@ export function GameScreen({
               </div>
             )}
           </div>
+          )}
 
           {/* Past rounds history */}
-          {pastClues.length > 0 && (
+          {!isCollab && pastClues.length > 0 && (
             <div>
               <div className="flex items-center gap-2 mb-3">
                 <History className="w-4 h-4 text-slate-500" />
@@ -367,6 +391,24 @@ export function GameScreen({
                     </div>
                   )}
                   <DrawingCanvas onSubmit={(image) => onSubmitClue({ image })} deadline={drawDeadline} />
+                </div>
+              ) : isCollab ? (
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <Send className="w-4 h-4 text-blue-400" />
+                    <p className="text-sm font-semibold text-slate-300">{t("collab.yourTurn")}</p>
+                  </div>
+                  {isImpostor && (
+                    <div className="flex items-start gap-2 p-2.5 mb-3 rounded-lg bg-orange-500/8 border border-orange-500/20">
+                      <AlertCircle className="w-3.5 h-3.5 text-orange-400 flex-shrink-0 mt-0.5" />
+                      <p className="text-xs text-orange-300/80">{t("draw.impostorReminder", { hint: hint ?? "" })}</p>
+                    </div>
+                  )}
+                  <DrawingCanvas
+                    onSubmit={(image) => onSubmitClue({ image })}
+                    deadline={turnDeadline}
+                    baseImage={canvas}
+                  />
                 </div>
               ) : (
                 <div>

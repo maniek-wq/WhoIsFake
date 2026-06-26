@@ -12,7 +12,7 @@ export type RoomStatus =
 
 export type WinReason = "guessed" | "onevsone" | "eliminated";
 
-export type RoomMode = "classic" | "drawing" | "szpont";
+export type RoomMode = "classic" | "drawing" | "szpont" | "collab";
 
 // ---- Persistent domain (users / friends) ----
 
@@ -107,6 +107,8 @@ export interface Room {
   /** id of the impostor who guessed the word correctly (for the end screen) */
   guessedBy: string | null;
   clues: Clue[];
+  /** collab mode: the shared cumulative drawing built up across turns (data-URL) */
+  canvas: string | null;
   /** randomized clue-giving order for the current round (alive player ids) */
   turnOrder: string[];
   revealAck: string[];
@@ -160,6 +162,8 @@ export interface PlayerView {
   /** hint: present only for the impostor */
   hint: string | null;
   clueHistory: Clue[];
+  /** collab mode: the shared cumulative drawing so far (data-URL); null otherwise */
+  canvas: string | null;
   /** id of the player whose turn it is to give a clue (null = round complete) */
   currentTurnId: string | null;
   /** clue-giving order for the current round (alive player ids, in turn order) */

@@ -192,6 +192,7 @@ export default function App() {
             category={view.category ?? ""}
             hint={view.hint ?? ""}
             clueHistory={view.clueHistory}
+            canvas={view.canvas}
             hasSubmittedThisRound={view.you.hasSubmittedThisRound}
             currentTurnId={view.currentTurnId}
             turnOrder={view.turnOrder}
@@ -212,6 +213,8 @@ export default function App() {
             clueHistory={view.clueHistory}
             round={view.round}
             deadline={view.vote?.deadline ?? 0}
+            mode={view.mode}
+            canvas={view.canvas}
             onVote={(targetId) => emit("vote:cast", { targetId })}
             onTimerEnd={() => {
               /* server resolves on its own deadline */
