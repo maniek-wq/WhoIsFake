@@ -28,11 +28,12 @@ type PreRoute = "landing" | "create" | "join";
 export default function App() {
   const { socket, ensureIdentity, user } = useAuth();
   const { addToast } = useToast();
-  const { ts } = useI18n();
+  const { t, ts } = useI18n();
 
   const [route, setRoute] = useState<PreRoute>("landing");
   const [view, setView] = useState<PlayerView | null>(null);
   const [guessing, setGuessing] = useState(false);
+  const [online, setOnline] = useState(true);
 
   // subscribe to server pushes
   useEffect(() => {
@@ -49,6 +50,20 @@ export default function App() {
       socket.off("toast", onToast);
     };
   }, [socket, addToast, ts]);
+
+  // track live connection so we can surface a reconnecting banner mid-game
+  useEffect(() => {
+    if (!socket) return;
+    setOnline(socket.connected);
+    const onConnect = () => setOnline(true);
+    const onDisconnect = () => setOnline(false);
+    socket.on("connect", onConnect);
+    socket.on("disconnect", onDisconnect);
+    return () => {
+      socket.off("connect", onConnect);
+      socket.off("disconnect", onDisconnect);
+    };
+  }, [socket]);
 
   // leaving the clue phase closes the guess overlay
   useEffect(() => {
@@ -120,6 +135,14 @@ export default function App() {
 
   const overlay = (
     <>
+      {view && !online && (
+        <div className="fixed top-0 inset-x-0 z-50 flex justify-center pointer-events-none">
+          <div className="mt-3 flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-sm font-medium backdrop-blur-md shadow-lg">
+            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+            {t("conn.lost")}
+          </div>
+        </div>
+      )}
       <AccountFab />
       <SidePanel />
     </>
@@ -176,6 +199,7 @@ export default function App() {
             hint={view.hint ?? ""}
             playerName={youName}
             impostorCount={view.impostorCount}
+            mode={view.mode}
             onReady={() => emit("reveal:ack")}
           />
         )}
@@ -265,6 +289,7 @@ export default function App() {
             impostorIds={view.end.impostorIds}
             guesserName={view.end.guesserName}
             secretWord={view.secretWord ?? ""}
+            impostorWord={view.impostorWord}
             players={players}
             winReason={view.end.winReason}
             onPlayAgain={() => emit("game:again")}

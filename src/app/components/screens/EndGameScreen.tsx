@@ -13,6 +13,8 @@ interface EndGameScreenProps {
   impostorIds: string[];
   guesserName: string | null;
   secretWord: string;
+  /** undercover mode: the variant word the undercover player(s) held */
+  impostorWord?: string | null;
   players: Player[];
   winReason: "guessed" | "onevsone" | "eliminated";
   onPlayAgain: () => void;
@@ -24,6 +26,7 @@ export function EndGameScreen({
   impostorIds,
   guesserName,
   secretWord,
+  impostorWord,
   players,
   winReason,
   onPlayAgain,
@@ -142,13 +145,39 @@ export function EndGameScreen({
           transition={{ delay: 0.5 }}
         >
           <GlassCard className="p-5 mb-4 border-white/10">
-            <p className="text-xs text-slate-500 uppercase tracking-wider mb-2">{t("end.secretWas")}</p>
-            <p
-              className="text-white font-bold tracking-widest"
-              style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "2.5rem", letterSpacing: "0.15em" }}
-            >
-              {secretWord}
-            </p>
+            {impostorWord ? (
+              <div className="flex items-stretch justify-center gap-4">
+                <div className="flex-1">
+                  <p className="text-xs text-blue-400/80 uppercase tracking-wider mb-2">{t("end.crewWord")}</p>
+                  <p
+                    className="text-blue-300 font-bold tracking-wider"
+                    style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "1.9rem" }}
+                  >
+                    {secretWord}
+                  </p>
+                </div>
+                <div className="w-px bg-white/10" />
+                <div className="flex-1">
+                  <p className="text-xs text-red-400/80 uppercase tracking-wider mb-2">{t("end.undercoverWord")}</p>
+                  <p
+                    className="text-red-300 font-bold tracking-wider"
+                    style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "1.9rem" }}
+                  >
+                    {impostorWord}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <>
+                <p className="text-xs text-slate-500 uppercase tracking-wider mb-2">{t("end.secretWas")}</p>
+                <p
+                  className="text-white font-bold tracking-widest"
+                  style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "2.5rem", letterSpacing: "0.15em" }}
+                >
+                  {secretWord}
+                </p>
+              </>
+            )}
           </GlassCard>
         </motion.div>
 

@@ -12,7 +12,7 @@ export type RoomStatus =
 
 export type WinReason = "guessed" | "onevsone" | "eliminated";
 
-export type RoomMode = "classic" | "drawing" | "szpont" | "collab";
+export type RoomMode = "classic" | "drawing" | "szpont" | "collab" | "undercover";
 
 // ---- Persistent domain (users / friends) ----
 
@@ -102,6 +102,8 @@ export interface Room {
   category: string | null;
   secretWord: string | null;
   hint: string | null;
+  /** undercover mode: the variant word handed to the undercover player(s) */
+  impostorWord: string | null;
   /** ids of every impostor this game (1 normally; several in "szpont" mode) */
   impostorIds: string[];
   /** id of the impostor who guessed the word correctly (for the end screen) */
@@ -157,8 +159,11 @@ export interface PlayerView {
     connected: boolean;
   }>;
   category: string | null;
-  /** secret word: present for non-impostors, and for everyone once the game ends */
+  /** secret word: present for non-impostors, and for everyone once the game ends.
+   * In undercover mode it's each player's own word during play, the crew word at end. */
   secretWord: string | null;
+  /** undercover mode, end screen only: the undercover variant word (null otherwise) */
+  impostorWord: string | null;
   /** hint: present only for the impostor */
   hint: string | null;
   clueHistory: Clue[];

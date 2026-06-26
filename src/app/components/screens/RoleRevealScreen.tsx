@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { GameButton } from "../ui/GameButton";
 import { Eye, EyeOff, AlertTriangle, BookOpen, ChevronRight } from "lucide-react";
 import { useI18n } from "../../i18n/LanguageContext";
+import type { RoomMode } from "../../lib/protocol";
 
 interface RoleRevealScreenProps {
   isImpostor: boolean;
@@ -11,6 +12,7 @@ interface RoleRevealScreenProps {
   hint?: string;
   playerName: string;
   impostorCount?: number;
+  mode?: RoomMode;
   onReady: () => void;
 }
 
@@ -21,9 +23,11 @@ export function RoleRevealScreen({
   hint,
   playerName,
   impostorCount = 1,
+  mode = "classic",
   onReady,
 }: RoleRevealScreenProps) {
   const { t } = useI18n();
+  const isUndercover = mode === "undercover";
   const categoryLabel = category ? t(`category.${category}`) : "";
   const [revealed, setRevealed] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
@@ -119,15 +123,15 @@ export function RoleRevealScreen({
                     </>
                   ) : (
                     <>
-                      <div className="text-7xl mb-4">🕵️</div>
+                      <div className="text-7xl mb-4">{isUndercover ? "🎭" : "🕵️"}</div>
                       <h2
                         className="text-blue-300 leading-tight mb-2 whitespace-pre-line"
                         style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "2.2rem", fontWeight: 700 }}
                       >
-                        {t("role.youKnow")}
+                        {isUndercover ? t("role.undercoverTitle") : t("role.youKnow")}
                       </h2>
                       <p className="text-slate-500 text-sm max-w-xs mx-auto leading-relaxed">
-                        {t("role.playerDesc")}
+                        {isUndercover ? t("role.undercoverDesc") : t("role.playerDesc")}
                       </p>
                     </>
                   )}
@@ -167,9 +171,13 @@ export function RoleRevealScreen({
                     </div>
                   ) : (
                     <div>
-                      <p className="text-xs font-semibold text-blue-400/70 uppercase tracking-wider mb-1">{t("role.category")}</p>
-                      <p className="text-sm text-slate-400">{categoryLabel}</p>
-                      <div className="mt-3 pt-3 border-t border-blue-500/15">
+                      {categoryLabel && (
+                        <>
+                          <p className="text-xs font-semibold text-blue-400/70 uppercase tracking-wider mb-1">{t("role.category")}</p>
+                          <p className="text-sm text-slate-400">{categoryLabel}</p>
+                        </>
+                      )}
+                      <div className={categoryLabel ? "mt-3 pt-3 border-t border-blue-500/15" : ""}>
                         <p className="text-xs font-semibold text-blue-400/70 uppercase tracking-wider mb-2">{t("role.secretWord")}</p>
                         <p
                           className="text-blue-300 font-bold tracking-widest"

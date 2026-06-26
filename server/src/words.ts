@@ -147,3 +147,63 @@ export function pickRandomWord() {
   const entry = words[Math.floor(Math.random() * words.length)];
   return { category, word: entry.word, hint: entry.hint };
 }
+
+// Word pairs for "undercover" mode: two similar-but-distinct words. The crew all
+// get one word, the undercover(s) get the other. Clues overlap heavily, so the
+// tell is subtle — that's the whole game. Order within a pair is irrelevant; the
+// engine randomly decides which side is the crew word.
+export const WORD_PAIRS: [string, string][] = [
+  ["HERBATA", "KAWA"],
+  ["LEW", "TYGRYS"],
+  ["PIES", "WILK"],
+  ["GITARA", "SKRZYPCE"],
+  ["ROWER", "MOTOCYKL"],
+  ["JEZIORO", "MORZE"],
+  ["KSIĄŻKA", "GAZETA"],
+  ["LATO", "WIOSNA"],
+  ["ŚNIEG", "DESZCZ"],
+  ["ZAMEK", "PAŁAC"],
+  ["SAMOLOT", "HELIKOPTER"],
+  ["JABŁKO", "GRUSZKA"],
+  ["KOT", "RYŚ"],
+  ["PIWO", "WINO"],
+  ["TELEFON", "TABLET"],
+  ["RZEKA", "STRUMIEŃ"],
+  ["GÓRY", "WZGÓRZA"],
+  ["MALARZ", "RYSOWNIK"],
+  ["LEKARZ", "PIELĘGNIARKA"],
+  ["MASŁO", "MARGARYNA"],
+  ["SOK", "LEMONIADA"],
+  ["KRZESŁO", "FOTEL"],
+  ["DŁUGOPIS", "OŁÓWEK"],
+  ["ZEGAR", "ZEGAREK"],
+  ["STATEK", "ŁÓDŹ"],
+  ["AUTOBUS", "TRAMWAJ"],
+  ["ŚWIECA", "LAMPA"],
+  ["KAPELUSZ", "CZAPKA"],
+  ["BUTY", "KAPCIE"],
+  ["SŁOŃCE", "KSIĘŻYC"],
+  ["CYRK", "TEATR"],
+  ["ZUPA", "SOS"],
+  ["TRUSKAWKA", "MALINA"],
+  ["CYTRYNA", "LIMONKA"],
+  ["WĄŻ", "JASZCZURKA"],
+  ["MOTYL", "ĆMA"],
+  ["PSZCZOŁA", "OSA"],
+  ["KROKODYL", "ALIGATOR"],
+  ["DELFIN", "REKIN"],
+  ["SKARPETKI", "RAJSTOPY"],
+  ["NARTY", "SNOWBOARD"],
+  ["PIANINO", "ORGANY"],
+  ["KOMETA", "METEOR"],
+  ["MGŁA", "CHMURA"],
+];
+
+/** Pick a pair and randomly assign crew word vs. undercover word. */
+export function pickRandomPair(): { crewWord: string; undercoverWord: string } {
+  const pair = WORD_PAIRS[Math.floor(Math.random() * WORD_PAIRS.length)];
+  const flip = Math.random() < 0.5;
+  return flip
+    ? { crewWord: pair[0], undercoverWord: pair[1] }
+    : { crewWord: pair[1], undercoverWord: pair[0] };
+}

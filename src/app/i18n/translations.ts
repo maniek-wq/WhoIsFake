@@ -52,6 +52,11 @@ export const translations: Record<Lang, Dict> = {
       modeCollabDesc: "Jeden zaczyna, reszta dorysowuje po kolei na tym samym obrazku",
       modeSzpont: "Szpont",
       modeSzpontDesc: "Sekretny tryb — dla innych wygląda jak klasyk, a Impostorów jest więcej (liczbę losuje gra)",
+      modeUndercover: "Undercover",
+      modeUndercoverDesc: "Każdy dostaje słowo. Jedna osoba ma inne — łudząco podobne. Wykryj odmieńca!",
+    },
+    conn: {
+      lost: "Połączenie utracone — ponawiam…",
     },
     draw: {
       yourDrawing: "Twój rysunek — runda {n}",
@@ -125,6 +130,8 @@ export const translations: Record<Lang, Dict> = {
       goal: "Twój cel: wtop się wskazówkami, potem zgadnij hasło albo doprowadź do 1 na 1, by wygrać.",
       understand: "Rozumiem — gramy",
       multiImpostors: "W tej grze jest {n} Impostorów — ufaj ostrożnie!",
+      undercoverTitle: "Twoje\nsłowo",
+      undercoverDesc: "Wszyscy dostają słowo — ale jedna osoba ma inne, łudząco podobne. Dawaj wskazówki i wykryj odmieńca (albo wtop się, jeśli to Ty).",
     },
     game: {
       impostor: "👺 Impostor",
@@ -211,6 +218,8 @@ export const translations: Record<Lang, Dict> = {
       secretWas: "Tajnym hasłem było",
       impostorWas: "Impostorem był",
       impostorsWere: "Impostorami byli",
+      crewWord: "Słowo grupy",
+      undercoverWord: "Słowo Undercover",
       allPlayers: "Wszyscy gracze",
       playAgain: "Zagraj ponownie",
       home: "Strona główna",
@@ -307,6 +316,11 @@ export const translations: Record<Lang, Dict> = {
       modeCollabDesc: "One starts, everyone adds to the same picture in turns",
       modeSzpont: "Szpont",
       modeSzpontDesc: "Secret mode — looks classic to others, but there are more Impostors (random count)",
+      modeUndercover: "Undercover",
+      modeUndercoverDesc: "Everyone gets a word. One person gets a different — but very similar — one. Spot them!",
+    },
+    conn: {
+      lost: "Connection lost — reconnecting…",
     },
     draw: {
       yourDrawing: "Your drawing — round {n}",
@@ -380,6 +394,8 @@ export const translations: Record<Lang, Dict> = {
       goal: "Your goal: Blend in with clues, then guess the secret word or reach a 1v1 situation to win.",
       understand: "I Understand — Let's Play",
       multiImpostors: "There are {n} Impostors this game — trust carefully!",
+      undercoverTitle: "Your\nWord",
+      undercoverDesc: "Everyone gets a word — but one person has a different, very similar one. Give clues and spot the odd one out (or blend in, if it's you).",
     },
     game: {
       impostor: "👺 Impostor",
@@ -466,6 +482,8 @@ export const translations: Record<Lang, Dict> = {
       secretWas: "The secret word was",
       impostorWas: "The Impostor was",
       impostorsWere: "The Impostors were",
+      crewWord: "Crew word",
+      undercoverWord: "Undercover word",
       allPlayers: "All players",
       playAgain: "Play Again",
       home: "Home",
@@ -550,6 +568,7 @@ export const serverMessagePl: Record<string, string> = {
   "Invalid vote target": "Nieprawidłowy cel głosowania",
   "Only the host can continue": "Tylko host może kontynuować",
   "Only the Impostor can guess": "Tylko Impostor może zgadywać",
+  "No guessing in this mode": "W tym trybie nie ma zgadywania",
   "Can't guess right now": "Teraz nie można zgadywać",
   "No secret word set": "Brak ustawionego hasła",
   "Only the host can restart": "Tylko host może zrestartować",

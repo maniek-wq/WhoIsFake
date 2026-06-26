@@ -3,7 +3,7 @@ import { motion } from "motion/react";
 import { GlassCard } from "../ui/GlassCard";
 import { GameButton } from "../ui/GameButton";
 import { GameInput } from "../ui/GameInput";
-import { ArrowLeft, Copy, Users, Zap, Check, Type, Palette, Ghost, Brush } from "lucide-react";
+import { ArrowLeft, Copy, Users, Zap, Check, Type, Palette, Ghost, Brush, VenetianMask } from "lucide-react";
 import { useI18n } from "../../i18n/LanguageContext";
 import type { RoomMode } from "../../lib/protocol";
 
@@ -137,6 +137,7 @@ export function CreateGameScreen({ onBack, onGameCreated, loggedInName }: Create
                 { id: "classic" as RoomMode, icon: <Type className="w-5 h-5" />, label: t("create.modeClassic"), desc: t("create.modeClassicDesc") },
                 { id: "drawing" as RoomMode, icon: <Palette className="w-5 h-5" />, label: t("create.modeDrawing"), desc: t("create.modeDrawingDesc") },
                 { id: "collab" as RoomMode, icon: <Brush className="w-5 h-5" />, label: t("create.modeCollab"), desc: t("create.modeCollabDesc") },
+                { id: "undercover" as RoomMode, icon: <VenetianMask className="w-5 h-5" />, label: t("create.modeUndercover"), desc: t("create.modeUndercoverDesc") },
                 { id: "szpont" as RoomMode, icon: <Ghost className="w-5 h-5" />, label: t("create.modeSzpont"), desc: t("create.modeSzpontDesc") },
               ]).map((m) => (
                 <motion.button

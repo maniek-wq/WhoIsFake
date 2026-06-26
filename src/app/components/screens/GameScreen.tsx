@@ -137,16 +137,18 @@ export function GameScreen({
           </div>
         </div>
 
-        {/* Category — centered & bold */}
-        <div className="absolute left-1/2 -translate-x-1/2 text-center pointer-events-none">
-          <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500">{t("game.category")}</p>
-          <p
-            className="font-bold text-white leading-tight"
-            style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "1.35rem" }}
-          >
-            {categoryLabel}
-          </p>
-        </div>
+        {/* Category — centered & bold (undercover has no category) */}
+        {categoryLabel && (
+          <div className="absolute left-1/2 -translate-x-1/2 text-center pointer-events-none">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500">{t("game.category")}</p>
+            <p
+              className="font-bold text-white leading-tight"
+              style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "1.35rem" }}
+            >
+              {categoryLabel}
+            </p>
+          </div>
+        )}
 
         <div className="flex items-center gap-2">
           {activeDeadline && (

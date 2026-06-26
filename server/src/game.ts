@@ -1,5 +1,5 @@
 import { customAlphabet } from "nanoid";
-import { pickRandomWord } from "./words.js";
+import { pickRandomWord, pickRandomPair } from "./words.js";
 import type { Store } from "./store.js";
 import type { Clue, PlayerView, Room, RoomMode, RoomPlayer, User } from "./types.js";
 
@@ -10,6 +10,7 @@ const DRAW_SECONDS = 60; // drawing-mode round timer (everyone draws at once)
 const DRAW_GRACE_MS = 2000; // grace so clients' real drawings beat the server cutoff
 const CLUE_SECONDS = 30; // word-mode per-turn timer (classic & szpont)
 const COLLAB_SECONDS = 45; // collab mode per-turn drawing timer
+const DISCONNECT_TURN_SECONDS = 8; // shortened turn clock when the active player is offline
 const TURN_GRACE_MS = 2000; // grace so a player's typed clue beats the server cutoff
 const ROOM_TTL_MS = 1000 * 60 * 60 * 2; // abandoned-room sweep window
 const MAX_IMAGE_CHARS = 700_000; // ~500KB data-URL cap for drawing clues
@@ -76,6 +77,9 @@ export class GameEngine {
       count = candidates.length
         ? candidates[Math.floor(Math.random() * candidates.length)]
         : n;
+    } else if (room.mode === "undercover") {
+      // one undercover normally; two once the table is big enough to hide them
+      count = n >= 6 ? 2 : 1;
     }
     for (let i = ids.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -170,11 +174,20 @@ export class GameEngine {
   /** Word-mode per-turn clock for the current player (classic & szpont). */
   private armTurnTimer(room: Room): void {
     this.clearTurnTimer(room.code);
-    if (room.status !== "playing" || room.mode === "drawing" || this.currentTurnPlayerId(room) === null) {
+    const current = this.currentTurnPlayerId(room);
+    if (room.status !== "playing" || room.mode === "drawing" || current === null) {
       room.turnDeadline = null;
       return;
     }
-    const secs = room.mode === "collab" ? COLLAB_SECONDS : CLUE_SECONDS;
+    // If it's an offline player's turn, run a short clock so the round doesn't
+    // stall on someone who may never come back (they auto-submit a blank clue).
+    const currentPlayer = room.players.find((p) => p.id === current);
+    const secs =
+      currentPlayer && !currentPlayer.connected
+        ? DISCONNECT_TURN_SECONDS
+        : room.mode === "collab"
+        ? COLLAB_SECONDS
+        : CLUE_SECONDS;
     room.turnDeadline = Date.now() + secs * 1000;
     const timer = setTimeout(() => this.endTurn(room.code), secs * 1000 + TURN_GRACE_MS);
     timer.unref?.();
@@ -240,6 +253,7 @@ export class GameEngine {
       category: null,
       secretWord: null,
       hint: null,
+      impostorWord: null,
       impostorIds: [],
       guessedBy: null,
       clues: [],
@@ -328,9 +342,47 @@ export class GameEngine {
     const room = this.getRoomOf(userId);
     if (!room) return null;
     const p = room.players.find((x) => x.id === userId);
-    if (p) p.connected = connected;
+    if (!p) return null;
+    p.connected = connected;
+
+    if (!connected) {
+      // Host dropped: hand the crown to a connected player so host-only actions
+      // (start, continue after results) don't freeze the room while they're gone.
+      if (room.hostId === userId) this.reassignHost(room);
+      // A drop during the reveal shouldn't stall everyone waiting on their ack.
+      if (room.status === "reveal") this.maybeBeginPlaying(room);
+      // If it was their turn, switch to the short offline clock (don't touch an
+      // innocent active player's clock).
+      if (
+        room.status === "playing" &&
+        room.mode !== "drawing" &&
+        this.currentTurnPlayerId(room) === userId
+      ) {
+        this.armTurnTimer(room);
+      }
+    } else if (
+      // Reconnected on their own turn → give them a fresh full clock to act.
+      room.status === "playing" &&
+      room.mode !== "drawing" &&
+      this.currentTurnPlayerId(room) === userId
+    ) {
+      this.armTurnTimer(room);
+    }
+
     this.deps.broadcast(room);
     return room;
+  }
+
+  /** Move host to another (preferably connected) player still in the room. */
+  private reassignHost(room: Room): void {
+    const next =
+      room.players.find((p) => p.connected && p.id !== room.hostId) ??
+      room.players.find((p) => p.id !== room.hostId);
+    if (!next) return;
+    const old = room.players.find((p) => p.id === room.hostId);
+    if (old) old.isHost = false;
+    room.hostId = next.id;
+    next.isHost = true;
   }
 
   // ---- lobby ----
@@ -351,7 +403,9 @@ export class GameEngine {
   }
 
   private normalizeMode(mode: RoomMode): RoomMode {
-    return mode === "drawing" || mode === "szpont" || mode === "collab" ? mode : "classic";
+    return mode === "drawing" || mode === "szpont" || mode === "collab" || mode === "undercover"
+      ? mode
+      : "classic";
   }
 
   setMaxPlayers(userId: string, maxPlayers: number): void {
@@ -383,14 +437,25 @@ export class GameEngine {
     const allReady = room.players.every((p) => p.isHost || p.isReady);
     if (!allReady) throw new GameError("All players must be ready");
 
-    const { word, category, hint } = pickRandomWord();
     const impostorIds = this.chooseImpostors(room);
 
     room.status = "reveal";
     room.round = 1;
-    room.secretWord = word;
-    room.category = category;
-    room.hint = hint;
+    if (room.mode === "undercover") {
+      // Everyone gets a word; the undercover(s) get a similar-but-different one.
+      // No category leak and no hint — the tell has to come from the clues alone.
+      const { crewWord, undercoverWord } = pickRandomPair();
+      room.secretWord = crewWord;
+      room.impostorWord = undercoverWord;
+      room.category = null;
+      room.hint = null;
+    } else {
+      const { word, category, hint } = pickRandomWord();
+      room.secretWord = word;
+      room.impostorWord = null;
+      room.category = category;
+      room.hint = hint;
+    }
     room.impostorIds = impostorIds;
     room.guessedBy = null;
     room.clues = [];
@@ -415,13 +480,24 @@ export class GameEngine {
     const room = this.requireRoom(userId);
     if (room.status !== "reveal") return;
     if (!room.revealAck.includes(userId)) room.revealAck.push(userId);
-    const everyone = room.players.every((p) => room.revealAck.includes(p.id));
-    if (everyone) {
-      room.status = "playing";
-      room.round = 1;
-      this.beginRound(room);
-    }
+    this.maybeBeginPlaying(room);
     this.deps.broadcast(room);
+  }
+
+  /**
+   * Leave the reveal for the clue phase once everyone still connected has
+   * acknowledged their role. Disconnected players aren't waited on — otherwise a
+   * single dropped player would freeze the whole table on the reveal screen.
+   */
+  private maybeBeginPlaying(room: Room): void {
+    if (room.status !== "reveal") return;
+    const pending = room.players.filter(
+      (p) => p.connected && !room.revealAck.includes(p.id)
+    );
+    if (pending.length > 0) return;
+    room.status = "playing";
+    room.round = 1;
+    this.beginRound(room);
   }
 
   // ---- clues ----
@@ -595,6 +671,7 @@ export class GameEngine {
 
   impostorGuess(userId: string, guess: string): boolean {
     const room = this.requireRoom(userId);
+    if (room.mode === "undercover") throw new GameError("No guessing in this mode");
     const p = this.player(room, userId);
     if (!p.isImpostor) throw new GameError("Only the Impostor can guess");
     if (room.status !== "playing" && room.status !== "results")
@@ -647,6 +724,7 @@ export class GameEngine {
     room.category = null;
     room.secretWord = null;
     room.hint = null;
+    room.impostorWord = null;
     room.impostorIds = [];
     room.guessedBy = null;
     room.clues = [];
@@ -729,8 +807,12 @@ export class GameEngine {
 
   viewFor(room: Room, userId: string): PlayerView {
     const you = room.players.find((p) => p.id === userId);
-    const youImpostor = you?.isImpostor ?? false;
     const ended = room.status === "ended";
+    const actualYouImpostor = you?.isImpostor ?? false;
+    // Undercover is a hidden-role mode: nobody (not even the undercover) learns
+    // their role until the game ends — the doubt is the whole point.
+    const hideRoles = room.mode === "undercover" && !ended;
+    const youImpostor = hideRoles ? false : actualYouImpostor;
     const alive = this.alivePlayers(room);
     const cluesThisRound = room.clues.filter((c) => c.round === room.round).length;
     const roundComplete = this.isRoundComplete(room);
@@ -759,7 +841,7 @@ export class GameEngine {
       isHost: p.isHost,
       isReady: p.isReady,
       isEliminated: p.isEliminated,
-      isImpostor: ended || p.id === userId ? p.isImpostor : false,
+      isImpostor: ended || (p.id === userId && !hideRoles) ? p.isImpostor : false,
       hasSubmittedThisRound: room.clues.some(
         (c) => c.round === room.round && c.playerId === p.id
       ),
@@ -839,8 +921,21 @@ export class GameEngine {
       },
       players,
       category: room.category,
-      secretWord: ended ? room.secretWord : youImpostor ? null : room.secretWord,
-      hint: youImpostor ? room.hint : null,
+      secretWord:
+        room.mode === "undercover"
+          ? // each player sees their own word during play; the crew word at the end
+            ended
+            ? room.secretWord
+            : actualYouImpostor
+            ? room.impostorWord
+            : room.secretWord
+          : ended
+          ? room.secretWord
+          : actualYouImpostor
+          ? null
+          : room.secretWord,
+      impostorWord: ended && room.mode === "undercover" ? room.impostorWord : null,
+      hint: room.mode === "undercover" ? null : actualYouImpostor ? room.hint : null,
       clueHistory: revealedClues,
       canvas: room.mode === "collab" ? room.canvas : null,
       currentTurnId,
